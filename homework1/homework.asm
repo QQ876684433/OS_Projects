@@ -6,9 +6,12 @@ main:
     mov rbp, rsp; for correct debugging
     call    print_hint
     call    get_x_y
-    ; call    get_x_y_len
     call    add_x_y
+    mov bl, 10
+    call    print_ascii
     call    mul_x_y
+    mov bl, 10
+    call    print_ascii
 
     mov	eax, 60
 	xor	rdi, rdi
@@ -35,8 +38,6 @@ print_ascii:
     ret
 
 
-
-
 ;=============================
 ; read a char from stdin     =
 ; the input char saved in bl =
@@ -52,6 +53,9 @@ get_char:
     ret
 
 
+;==============================================
+; get x and y from stdin separated with space =
+;==============================================
 get_x_y:
     ; get x
     mov bh, 20H
@@ -84,41 +88,10 @@ get_x_y:
     ret
 
 
-; get_x_y_len:
-;     ;============================================
-;     ; cal x length
-;     mov al, 0H   ; temp for x_len
-;     mov rbp, x
-;     get_x_len_loop:
-;         mov ah, [rbp]
-;         inc rbp
-;         cmp ah, 0
-;         jz end_x_len
-;         inc al
-;         jmp get_x_len_loop
-;     end_x_len:
-;         mov byte [x_len], al ; save x_len to memory
-;     ;============================================
-
-;     ;============================================
-;     ; cal y length
-;     mov al, 0H   ; temp for y_len
-;     mov rbp, y
-;     get_y_len_loop:
-;         mov ah, [rbp]
-;         inc rbp
-;         cmp ah, 0
-;         jz end_y_len
-;         inc al
-;         jmp get_y_len_loop
-;     end_y_len:
-;         sub al, 1   ; remove the \n or \r
-;         mov byte [y_len], al ; save x_len to memory
-;     ;============================================
-
-;     ret
-
-add_x_y:
+;========================================================
+; get end of x and y, saved in rbx and rbp respectively =
+;========================================================
+get_x_y_end:
     mov rbx, x  ; save the last index of x
     get_x_end_loop:
         mov ah, [rbx]
@@ -138,6 +111,10 @@ add_x_y:
         jmp get_y_end_loop
     end_y_end:
         dec rbp
+    ret
+
+add_x_y:
+    call    get_x_y_end
 
     ; set flag 0
     mov rax, 0
@@ -157,15 +134,6 @@ add_x_y:
         cal_flag:
             add al, 48
             call    set_flag
-        ; write result
-        ; push    rbx
-        ; push    rbp
-        ; push    rax
-        ; mov bl, al
-        ; call    print_ascii
-        ; pop rax
-        ; pop rbp
-        ; pop rbx
         push    rax
 
         dec rbx
@@ -192,9 +160,115 @@ add_x_y:
     add_x_y_end:
         ret
 
-mul_x_y:
+;================================
+; result saved in al            =
+; if y==0, al will be 1, else 0 =
+;================================
+check_y_equal_zero:
+    push    rbp
+    mov al, 1
+    check_loop:
+        mov ah, byte [rbp]
+        cmp ah, 48
+        jnz not_equal_zero
+        dec rbp
+        cmp rbp, y
+        jb  end_check_loop
+        jmp check_loop
+    end_check_loop:
+        pop rbp
+        ret
+    not_equal_zero:
+        mov al, 0
+        jmp end_check_loop
 
-    ret
+sub_1_from_y:
+    push    rbp
+    sub_loop:
+        cmp byte [rbp], 48
+        jz  left_shift
+        dec byte [rbp]
+        jmp end_sub_loop
+        left_shift:
+            mov byte [rbp], 57
+            dec rbp
+            jmp sub_loop
+    end_sub_loop:
+        pop rbp
+        ret
+
+mul_x_y:
+    call    get_x_y_end
+    mov byte [mul_result], '0'    
+    
+    mul_x_y_loop:
+        call    check_y_equal_zero
+        cmp al, 1
+        jz  end_of_mul_x_y
+        call    sub_1_from_y
+        push    rbx
+
+        ; set flag 0
+        mov rax, 0
+        mov rcx, mul_result
+        add_x_to_mul_result_loop:
+            mov al, ah  ; add the flag as the initial value
+            add al, byte [rcx]
+            cmp rbx, x
+            jb  set_result_flag
+            add al, byte [rbx]
+            sub al, 48
+            set_result_flag:
+                call    set_flag
+            mov byte [rcx], al
+            inc rcx
+            dec rbx
+            cmp rbx, x
+            jnb add_x_to_mul_result_loop
+        add_rest_flag:
+            cmp ah, 0
+            jz  end_add_rest_flag
+            mov al, ah
+            add al, byte [rcx]
+            call    set_flag
+            mov byte [rcx], al
+            inc rcx
+            jmp add_rest_flag
+        end_add_rest_flag:    
+            pop rbx
+            jmp mul_x_y_loop
+
+    end_of_mul_x_y:
+        ; mov	rax, 1H
+        ; mov	rdi, 1H
+        ; mov	rdx, 48
+        ; mov	rsi, mul_result
+        ; syscall
+        mov rax, 0
+        mov rbx, mul_result
+        push    1   ; stack buttom
+        push_loop:
+            mov cl, byte [rbx]
+            push    rcx
+            inc rbx
+            inc rax
+            cmp rax, 48
+            jnz push_loop
+        pop_zero_loop:
+            pop rax
+            cmp al, 48
+            jz  pop_zero_loop
+            mov bl, al
+            call    print_ascii
+        print_rest_char:
+            pop rax
+            cmp rax, 1
+            jz  end_print_rest_char
+            mov bl, al
+            call    print_ascii
+            jmp print_rest_char
+    end_print_rest_char:
+        ret
 
 
 ; 设置进位，如果有进位，ah为1，否则为0
@@ -215,12 +289,11 @@ section	.data
     hint:	db	"Please input x and y: "
     x_end:  db    0
     y_end:  db    0
+    mul_result: times 48    db    48
 
 
 
 section	.bss
-    add_result: resb    24
-    mul_result: resb    48
     x:  resb    24
     y:  resb    24
     pbuf:	resb	1
