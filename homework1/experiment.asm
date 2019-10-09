@@ -166,9 +166,128 @@ add_x_y:
         call    add_x_y_different_flag
         ret    
 
-add_x_y_different_flag:
+;===============================================
+; compare x and y,                             =
+; al==2 if x>y, al==1 if x==y, otherwise al==0 =
+;===============================================
+compare_x_y:
+    call    get_x_y_end
+    call    get_x_y_start
+    push    rbx
+    push    rbp
+    sub rbx, r8
+    sub rbp, r9
+    cmp rbx, rbp
+    pop rbp
+    pop rbx
+    jz  compare_loop    ; the same length
+    ja  x_bigger_than_y
+    y_bigger_than_x:
+        mov al, 0
+        ret
+    x_bigger_than_y:
+        mov al, 2
+        ret
+    x_equal_to_y:
+        mov al, 1
+        ret
+    compare_loop:
+        cmp r8, rbx
+        jb  x_equal_to_y
+        mov al, byte [r8]
+        cmp al, byte [r9]
+        inc r8
+        inc r9
+        jz  compare_loop
+        ja  x_bigger_than_y
+        jb  y_bigger_than_x
 
-    ret    
+
+add_x_y_different_flag:
+    call    compare_x_y
+    call    get_x_y_end
+    call    get_x_y_start
+    cmp al, 1
+    jz  print_zero
+    ja  finish_swap_x_y
+    ; swap x and y
+    mov rax, 0
+    mov al, byte [x_flag]
+    push    rax
+    push    r8
+    push    rbx
+    mov al, byte [y_flag]
+    push    rax
+    push    r9
+    push    rbp
+    pop rbx
+    pop r8
+    pop rax
+    mov byte [x_flag], al
+    pop rbp
+    pop r9
+    pop rax
+    mov byte [y_flag], al
+    ; now x>y, and flag of result equals to x_flag
+    finish_swap_x_y:
+        mov al, 0   ; 作为借位
+        mov rcx, add_result
+    different_flag_add_loop:
+        cmp rbx, r8
+        jb  end_different_flag_add_loop
+        mov ah, byte [rbx]
+        cmp rbp, r9
+        jb  skip_sub
+        sub ah, byte [rbp]
+        add ah, '0'
+        skip_sub:
+        sub ah, al
+        mov al, 0
+        cmp ah, '0'
+        dec rbp
+        dec rbx
+        mov byte [rcx], ah
+        inc rcx
+        jae different_flag_add_loop
+        add ah, 10
+        mov al, 1
+        dec rcx
+        mov byte [rcx], ah
+        inc rcx
+        jmp different_flag_add_loop
+    end_different_flag_add_loop:
+        mov rcx, x_flag
+        mov bl, byte [rcx]
+        call    print_ascii
+        
+        ; mov	rax, 1H
+        ; mov	rdi, 1H
+        ; mov	rdx, 24
+        ; mov	rsi, add_result
+        ; syscall
+        mov rcx, add_result
+        push    0
+        push_add_result_loop:
+            cmp byte [rcx], 0
+            jz  pop_add_result_loop
+            mov rbx, 0
+            mov bl, byte [rcx]
+            push    rbx
+            inc rcx
+            jmp push_add_result_loop
+        pop_add_result_loop:
+            mov rbx, 0
+            pop rbx
+            cmp rbx, 0
+            jz  end_pop_add_result_loop
+            call    print_ascii
+            jmp pop_add_result_loop
+        end_pop_add_result_loop: 
+            ret
+    print_zero:
+        mov bl, '0'
+        call    print_ascii
+        ret
 
 add_x_y_same_flag:
     call    get_x_y_end
@@ -335,8 +454,9 @@ section	.data
     hint:	db	"Please input x and y: "
     x_flag: db  0   ; representing +
     y_flag: db  0   ; representing +
-    mul_result: times 48    db  48
-    mul_tmp:    times 48    db  48  
+    add_result: times   24  db  0
+    mul_result: times   48    db  48
+    mul_tmp:    times   48    db  48  
     counter:    db  0
 
 
