@@ -260,11 +260,6 @@ add_x_y_different_flag:
         mov bl, byte [rcx]
         call    print_ascii
         
-        ; mov	rax, 1H
-        ; mov	rdi, 1H
-        ; mov	rdx, 24
-        ; mov	rsi, add_result
-        ; syscall
         mov rcx, add_result
         push    0
         push_add_result_loop:
@@ -344,8 +339,6 @@ mul_x_y:
     call    get_x_y_end
     call    get_x_y_start
 
-    mov qword [mul_result_start], mul_result
-    add qword [mul_result_start], 48
     mul_x_y_loop:
         cmp r9, rbp
         ja  end_mul_x_y_loop
@@ -398,27 +391,30 @@ mul_x_y:
         mov al, byte [x_flag]
         mov ah, byte [y_flag]
         cmp al, ah
-        jz trim_zero_from_mul_result
+        jz end_print_mul_flag
         mov bl, '-'
         call    print_ascii
 
+        end_print_mul_flag:
+            mov rax, mul_result
+            add rax, 50
         trim_zero_from_mul_result:
-            cmp qword [mul_result_start], mul_result
+            cmp rax, mul_result
             jz  mul_same_flag
-            mov rax, qword [mul_result_start]
             cmp byte [rax], '0'
             jnz mul_same_flag
-            dec qword [mul_result_start]
+            dec rax
             jmp trim_zero_from_mul_result
 
         mul_same_flag:  
             ; print number part of mul_result
-            cmp qword [mul_result_start], mul_result
+            cmp rax, mul_result
             jb  end_print_mul_result
-            mov rax, qword [mul_result_start]
             mov bl, byte [rax]
+            push    rax
             call    print_ascii
-            dec qword [mul_result_start]
+            pop rax
+            dec rax
             jmp mul_same_flag
         end_print_mul_result:    
     ret
@@ -455,8 +451,8 @@ section	.data
     x_flag: db  0   ; representing +
     y_flag: db  0   ; representing +
     add_result: times   24  db  0
-    mul_result: times   48    db  48
-    mul_tmp:    times   48    db  48  
+    mul_result: times   50    db  48
+    mul_tmp:    times   50    db  48  
     counter:    db  0
 
 
