@@ -1,6 +1,5 @@
 	global	main
 
-
 section .text
 main:
     mov rbp, rsp; for correct debugging
@@ -37,7 +36,6 @@ print_ascii:
 	syscall
     ret
 
-
 ;=============================
 ; read a char from stdin     =
 ; the input char saved in bl =
@@ -51,7 +49,6 @@ get_char:
 	syscall
 	mov	bl, [pbuf]	;save char in register `bl`
     ret
-
 
 ;==============================================
 ; get x and y from stdin separated with space =
@@ -103,7 +100,6 @@ get_x_y:
             jmp read_y_rest_loop
     end_get_x_y:
         ret
-
 
 ;========================================================
 ; get end of x and y, saved in rbx and rbp respectively =
@@ -193,11 +189,13 @@ compare_x_y:
         ret
     compare_loop:
         cmp r8, rbx
-        jb  x_equal_to_y
+        ja  x_equal_to_y
         mov al, byte [r8]
-        cmp al, byte [r9]
+        mov cl, byte [r9]
+        ; cmp al, byte [r9]
         inc r8
         inc r9
+        cmp al, cl
         jz  compare_loop
         ja  x_bigger_than_y
         jb  y_bigger_than_x
@@ -264,12 +262,18 @@ add_x_y_different_flag:
         push    0
         push_add_result_loop:
             cmp byte [rcx], 0
-            jz  pop_add_result_loop
+            jz  trim_zero_from_add_result
             mov rbx, 0
             mov bl, byte [rcx]
             push    rbx
             inc rcx
             jmp push_add_result_loop
+        trim_zero_from_add_result:
+            mov rbx, 0
+            pop rbx
+            cmp bl, '0'
+            jz  trim_zero_from_add_result
+            push    rbx
         pop_add_result_loop:
             mov rbx, 0
             pop rbx
@@ -287,6 +291,18 @@ add_x_y_different_flag:
 add_x_y_same_flag:
     call    get_x_y_end
     call    get_x_y_start
+    
+    ; check if both x and y are zero
+    cmp r8, rbx
+    jnz either_x_or_y_zero
+    cmp r9, rbp
+    jnz either_x_or_y_zero
+    cmp byte [r8], '0'
+    jnz either_x_or_y_zero
+    cmp byte [r9], '0'
+    jnz either_x_or_y_zero
+    mov cl, 0
+    either_x_or_y_zero:
 
     ; set flag 0
     mov rax, 0
@@ -317,13 +333,16 @@ add_x_y_same_flag:
     
     ; 把最后一个进位加上去
     cmp ah, 1
-    jnz print_result_loop
+    jnz print_add_flag
     mov al, 49
     push    rax
 
     ; print result
-    mov bl, byte [x_flag]
-    call    print_ascii
+    print_add_flag:
+        cmp cl, 0
+        jz  print_result_loop
+        mov bl, byte [x_flag]
+        call    print_ascii
     print_result_loop:
         pop rax
         cmp rax, 1
@@ -338,6 +357,24 @@ add_x_y_same_flag:
 mul_x_y:
     call    get_x_y_end
     call    get_x_y_start
+    
+    ; check if both x and y are zero
+    cmp r8, rbx
+    jnz x_not_zero
+    cmp byte [r8], '0'
+    jnz x_not_zero
+    mov bl, '0'
+    call    print_ascii
+    ret
+    x_not_zero:
+    cmp r9, rbp
+    jnz both_x_and_y_not_zero
+    cmp byte [r9], '0'
+    jnz both_x_and_y_not_zero
+    mov bl, '0'
+    call    print_ascii
+    ret
+    both_x_and_y_not_zero:
 
     mul_x_y_loop:
         cmp r9, rbp
@@ -454,8 +491,6 @@ section	.data
     mul_result: times   50    db  48
     mul_tmp:    times   50    db  48  
     counter:    db  0
-
-
 section	.bss
     x:  resb    24
     y:  resb    24
