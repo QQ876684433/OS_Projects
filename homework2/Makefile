@@ -1,4 +1,4 @@
-.PHONY: build clean
+.PHONY: build clean run
 
 AS = nasm
 CC = gcc
@@ -16,5 +16,11 @@ fat12Driver: main.o my_print.o
 
 build: fat12Driver clean
 
+main.run: main.c
+	@${CC} -o $@ $?
+	@./$@
+
+run: main.run clean
+
 clean: 
-	-rm -f *.o
+	@-rm -f *.o *.run
