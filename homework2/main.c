@@ -2,8 +2,9 @@
 #include <memory.h>
 #include <stdlib.h>
 
-#define IMAGE "images/fat12.img"
+#define IMAGE "images/a.img"
 #define BOOT_SECTOR_OFFSET 11
+#define DIR_ENTRY_PER_SECTOR 16
 
 typedef unsigned char u8;
 typedef unsigned short u16;
@@ -78,7 +79,13 @@ struct BootSector *bootSector;
 // 读取启动扇区
 void loadBootSector(FILE *, struct BootSector *);
 // tree
-void tree(FILE *, char *dir);
+void tree(FILE *);
+// ls
+void ls(FILE *, char *, int);
+// map directory entry to struct
+void mapDirEntry(FILE *, struct DirEntry *, int);
+// combine file or subdirectory name and  extension
+char *extractFileName(char *fileName);
 
 int main(int argc, char const *argv[])
 {
@@ -96,7 +103,7 @@ int main(int argc, char const *argv[])
     printf("根目录文件数最大值:%d\n", bs.BS_MaxNumOfRootDirectoryEntries);
     printf("一个FAT占用扇区数:%d\n", bs.BS_SectorsPerFAT);
 
-    tree(fat12, NULL);
+    tree(fat12);
     return 0;
 }
 
@@ -130,12 +137,30 @@ void loadBootSector(FILE *fat12, struct BootSector *bs_ptr)
     }
 }
 
-void tree(FILE *fat12, char *dir)
+void mapDirEntry(FILE *fat12, struct DirEntry *de_ptr, int base)
 {
-    if (dir == NULL)
+    int index = fseek(fat12, base, SEEK_SET);
+    if (index != 0)
     {
-        dir = "/";
+        printf("failed to locate Root Directories!");
+        exit(1);
     }
+
+    index = fread(de_ptr, 1, 32, fat12);
+    if (index != 32)
+    {
+        printf("failed to read Directory Entry!");
+        exit(1);
+    }
+}
+
+void tree(FILE *fat12)
+{
+    printf("[DIR]/:\n");
+
+    char *fullNames[224];
+    int bases[224];
+    int index = 0;
 
     struct DirEntry dirEntry;
     struct DirEntry *de_ptr = &dirEntry;
@@ -143,24 +168,9 @@ void tree(FILE *fat12, char *dir)
         (bootSector->BS_NumberOfReservedSectors + bootSector->BS_NumberOfFATs * bootSector->BS_SectorsPerFAT) * bootSector->BS_BytesPerSector;
 
     struct FileName fileName;
-    for (size_t i = 0; i < bootSector->BS_MaxNumOfRootDirectoryEntries; i++)
+    for (size_t i = 0; i < bootSector->BS_MaxNumOfRootDirectoryEntries; i++, base += 32)
     {
-        int index = fseek(fat12, base, SEEK_SET);
-        if (index != 0)
-        {
-            printf("failed to locate Root Directories (i = %d)!", i);
-            exit(1);
-        }
-
-        index = fread(de_ptr, 1, 32, fat12);
-        if (index != 32)
-        {
-            printf("failed to read Directory Entry (i = %d)!", i);
-            exit(1);
-        }
-
-        // point to next Directory Entry
-        base += 32;
+        mapDirEntry(fat12, de_ptr, base);
 
         /*
 		 *	2. If the first byte of the Filename field is 0xE5, then the directory entry is free (i.e., currently
@@ -178,24 +188,7 @@ void tree(FILE *fat12, char *dir)
         }
 
         // now current entry is in use
-        struct FileName fileName;
-        memset(&fileName, 0, sizeof(struct FileName));
-        for (size_t j = 0; j < 8; j++)
-        {
-            if (dirEntry.DE_Filename[j] == ' ')
-            {
-                break;
-            }
-            fileName.name[j] = dirEntry.DE_Filename[j];
-        }
-        for (size_t j = 0; j < 3; j++)
-        {
-            if (dirEntry.DE_Filename[8 + j] == ' ')
-            {
-                break;
-            }
-            fileName.ext[j] = dirEntry.DE_Filename[8 + j];
-        }
+        char *fileName = extractFileName(dirEntry.DE_Filename);
 
         // skip hidden file or directories
         if ((dirEntry.DE_Attributes & 0x02) != 0)
@@ -206,12 +199,120 @@ void tree(FILE *fat12, char *dir)
         if ((dirEntry.DE_Attributes & 0x10) != 0)
         {
             // SubDirectory
-            printf("[DIR]\t%s.%s\n", fileName.name, fileName.ext);
+            printf("[DIR]%s ", fileName);
+
+            char *fullName = (char *)malloc(100);
+            memset(fullName, 0, 100);
+            fullName[0] = '/';
+            strcpy(fullName + 1, fileName);
+            int base = (dirEntry.DE_FirstLogicalCluster + 31) * bootSector->BS_BytesPerSector;
+            // ls(fat12, fullName, base);
+            fullNames[index] = fullName;
+            bases[index++] = base;
         }
         else
         {
             // file
-            printf("[FILE]\t%s.%s\n", fileName.name, fileName.ext);
+            printf("[FILE]%s ", fileName);
         }
     }
+    printf("\n");
+
+    for (size_t i = 0; i < index; i++)
+    {
+        ls(fat12, fullNames[i], bases[i]);
+    }
+}
+
+void ls(FILE *fat12, char *dir, int base)
+{
+    char *fullNames[224];
+    int bases[224];
+    int index = 0;
+
+    printf("[DIR]%s/:\n", dir);
+    struct DirEntry dirEntry;
+    for (size_t i = 0; i < DIR_ENTRY_PER_SECTOR; i++, base += 32)
+    {
+        mapDirEntry(fat12, &dirEntry, base);
+
+        if (dirEntry.DE_Filename[0] == 0x00)
+        {
+            break;
+        }
+        else if (dirEntry.DE_Filename[0] == 0xE5)
+        {
+            continue;
+        }
+
+        // now DirEntry is in use
+        char *fileName = extractFileName(dirEntry.DE_Filename);
+
+        // skip hidden file or directories
+        if ((dirEntry.DE_Attributes & 0x02) != 0)
+        {
+            continue;
+        }
+
+        if ((dirEntry.DE_Attributes & 0x10) != 0)
+        {
+            // SubDirectory
+            printf("[DIR]%s ", fileName);
+
+            if (strcmp(fileName, ".") != 0 && strcmp(fileName, "..") != 0)
+            {
+                char *fullName = (char *)malloc(100);
+                memset(fullName, 0, 100);
+                strcpy(fullName, dir);
+                int len = strlen(dir);
+                fullName[len++] = '/';
+                strcpy(fullName + len, fileName);
+                int base = (dirEntry.DE_FirstLogicalCluster + 31) * bootSector->BS_BytesPerSector;
+                // ls(fat12, fullName, base);
+                fullNames[index] = fullName;
+                bases[index++] = base;
+            }
+        }
+        else
+        {
+            // file
+            printf("[FILE]%s ", fileName);
+        }
+    }
+    printf("\n");
+
+    for (size_t i = 0; i < index; i++)
+    {
+        ls(fat12, fullNames[i], bases[i]);
+    }
+}
+
+char *extractFileName(char *fileName)
+{
+    char *name = (char *)malloc(13);
+    memset(name, 0, 13);
+    int index = 0;
+    for (size_t i = 0; i < 8; i++)
+    {
+        if (fileName[i] == ' ')
+        {
+            break;
+        }
+        name[index++] = fileName[i];
+    }
+    int hasExt = 0;
+    for (size_t i = 8; i < 11; i++)
+    {
+        if (hasExt == 0 && fileName[i] != ' ')
+        {
+            hasExt = 1;
+            name[index++] = '.';
+        }
+        if (hasExt == 1)
+        {
+            name[index++] = fileName[i];
+        }
+    }
+
+    return name;
 }
