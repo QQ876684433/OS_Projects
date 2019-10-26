@@ -13,6 +13,20 @@ int main(int argc, char const *argv[])
     loadBootSector(fat12, &bs);
     showBootSectorInfo(&bs);
 
-    tree(fat12, &bs);
+    while (1)
+    {
+        printf(">");
+        char command[100];
+        scanf("%s", command);
+        if (strcmp(command, EXIT) == 0)
+        {
+            exit(0);
+        }
+        else if (strcmp(command, LS) == 0)
+        {
+            tree(fat12, &bs);
+        }
+    }
+
     return 0;
 }

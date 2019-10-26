@@ -2,6 +2,7 @@
 #define FAT_H_
 
 #include "includes.h"
+#include "error.h"
 
 #define BOOT_SECTOR_OFFSET 11
 #define DIR_ENTRY_PER_SECTOR 16

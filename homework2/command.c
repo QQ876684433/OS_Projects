@@ -2,7 +2,7 @@
 
 void tree(FILE *fat12, struct BootSector *bootSector)
 {
-    printf("[DIR]/:\n");
+    printf("/:\n");
 
     char *fullNames[224];
     int logicalClusters[224];
@@ -46,7 +46,7 @@ void tree(FILE *fat12, struct BootSector *bootSector)
         if ((dirEntry.DE_Attributes & 0x10) != 0)
         {
             // SubDirectory
-            printf("[DIR]%s ", fileName);
+            printf("%s  ", fileName);
 
             char *fullName = (char *)malloc(100);
             memset(fullName, 0, 100);
@@ -59,7 +59,7 @@ void tree(FILE *fat12, struct BootSector *bootSector)
         else
         {
             // file
-            printf("[FILE]%s ", fileName);
+            printf("%s  ", fileName);
         }
     }
     printf("\n");
@@ -77,7 +77,7 @@ void ls(FILE *fat12, struct BootSector *bootSector, char *dir, int logicalCluste
     int base = getPhysicalBase(logicalCluster, bootSector);
 
     if (dirNum == 0)
-        printf("[DIR]%s/:\n", dir);
+        printf("%s/:\n", dir);
     struct DirEntry dirEntry;
     for (size_t i = 0; i < DIR_ENTRY_PER_SECTOR; i++, base += 32)
     {
@@ -105,7 +105,7 @@ void ls(FILE *fat12, struct BootSector *bootSector, char *dir, int logicalCluste
         if ((dirEntry.DE_Attributes & 0x10) != 0)
         {
             // SubDirectory
-            printf("[DIR]%s ", fileName);
+            printf("%s  ", fileName);
 
             if (strcmp(fileName, ".") != 0 && strcmp(fileName, "..") != 0)
             {
@@ -123,7 +123,7 @@ void ls(FILE *fat12, struct BootSector *bootSector, char *dir, int logicalCluste
         else
         {
             // file
-            printf("[FILE]%s ", fileName);
+            printf("%s  ", fileName);
         }
     }
 
@@ -157,4 +157,57 @@ void ls(FILE *fat12, struct BootSector *bootSector, char *dir, int logicalCluste
         // ok, current cluster is not the last
         ls(fat12, bootSector, dir, nextLogicalClusterValue, fullNames, logicalClusters, dirNum);
     }
+}
+
+// example below works, and the　redundant will be ignored
+// "       ls -l         nju.txt       -ll         "
+int splits(char *src, char *target[])
+{
+    int index = 0;
+    int count = 0;
+    char *part;
+    // trim space
+    while (src[index] == ' ')
+        index++;
+    if (src[index] == 0)
+    {
+        return count;
+    }
+
+    while (1)
+    {
+        part = (char *)malloc(sizeof(char) * 100);
+        memset(part, 0, 100);
+
+        int ptr = index;
+        while (1)
+        {
+            if (src[ptr] == ' ')
+            {
+                target[count++] = part;
+
+                // trim space
+                while (src[ptr] == ' ')
+                    ptr++;
+                if (src[ptr] == 0)
+                {
+                    return count;
+                }
+                else
+                {
+                    index = ptr;
+                }
+
+                break;
+            }
+            else if (src[ptr] == 0)
+            {
+                target[count++] = part;
+                return count;
+            }
+            part[ptr - index] = src[ptr];
+            ptr++;
+        }
+    }
+    return count;
 }
