@@ -1,19 +1,5 @@
 #include "headers/command.h"
 
-void printEntries(char *fileOrDir[], int *flags, int entryNum)
-{
-    for (size_t i = 0; i < entryNum; i++)
-    {
-        char *sp[224];
-        int count = splits(fileOrDir[i], sp, '/');
-        printf("%s  ", sp[count - 1]);
-    }
-}
-
-char *getLastDir(char *dirName)
-{
-}
-
 void countDirAndFile(FILE *fat12, struct BootSector *bootSector, int logicalCluster, int *flags, int entryNum)
 {
     int base = getPhysicalBase(logicalCluster, bootSector);
@@ -63,6 +49,54 @@ void countDirAndFile(FILE *fat12, struct BootSector *bootSector, int logicalClus
         // ok, current cluster is not the last
         countDirAndFile(fat12, bootSector, nextLogicalClusterValue, flags, entryNum);
     }
+}
+
+void lsPrint(FILE*fat12, struct BootSector* bootSector, int hasParam, char *dir, char *directoryEntries[], char *dirLogicalClusters[], int *flags, int entryNum){
+    if (hasParam == LS_NO_PARAM)
+    {
+        printf("%s/:\n", dir);
+        for (size_t i = 0; i < entryNum; i++)
+        {
+            char *sp[224];
+            int count = splits(directoryEntries[i], sp, '/');
+            printf("%s  ", sp[count - 1]);
+        }
+    }
+    else
+    {
+        int dn = 0, fn = 0;
+        for (size_t i = 0; i < entryNum; i++)
+        {
+            if (flags[i] == ENTRY_DIRECTORY)
+            {
+                dn++;
+            }
+            else if (flags[i] == ENTRY_FILE)
+            {
+                fn++;
+            }
+        }
+
+        printf("%s %d %d:\n", strcmp(dir, "")==0?"/":dir, dn, fn);
+        for (size_t i = 0; i < entryNum; i++)
+        {
+            if (flags[i] == ENTRY_DIRECTORY)
+            {
+                int logClstr = dirLogicalClusters[i];
+                int dirNum = 0, fileNum = 0;
+                int flags[224];
+                countDirAndFile(fat12, bootSector, logClstr, flags, 0);
+                char *sp[224];
+                int count = splits(directoryEntries[i], sp, '/');
+                printf("%s %d %d\n", sp[count - 1], dirNum, fileNum);
+            }
+            else
+            {
+                printf("%s\n", directoryEntries[i]);
+            }
+        }
+    }
+    printf("\n");
 }
 
 /**
@@ -132,45 +166,7 @@ void tree(FILE *fat12, struct BootSector *bootSector, int hasParam)
         entryNum++;
     }
 
-    if (hasParam == LS_NO_PARAM)
-    {
-        printf("/:\n");
-        printEntries(directoryEntries, flags, entryNum);
-    }
-    else
-    {
-        int dn = 0, fn = 0;
-        for (size_t i = 0; i < entryNum; i++)
-        {
-            if (flags[i] == ENTRY_DIRECTORY)
-            {
-                dn++;
-            }
-            else
-            {
-                fn++;
-            }
-        }
-        printf("/ %d %d:\n", dn, fn);
-        for (size_t i = 0; i < entryNum; i++)
-        {
-            if (flags[i] == ENTRY_DIRECTORY)
-            {
-                int logClstr = logicalClusters[i];
-                int dirNum = 0, fileNum = 0;
-                int flags[224];
-                countDirAndFile(fat12, bootSector, logClstr, flags, 0);
-                char *sp[224];
-                int count = splits(directoryEntries[i], sp, '/');
-                printf("%s %d %d\n", sp[count - 1], dirNum, fileNum);
-            }
-            else
-            {
-                printf("%s\n", directoryEntries[i]);
-            }
-        }
-    }
-    printf("\n");
+    lsPrint(fat12, bootSector, hasParam, "", directoryEntries, logicalClusters, flags, entryNum);
 
     for (size_t i = 0; i < entryNum; i++)
     {
@@ -255,45 +251,7 @@ void ls(FILE *fat12, struct BootSector *bootSector, int hasParam, char *dir, int
     u16 nextLogicalClusterValue = getNextLogicalCluster(fat12, logicalCluster, bootSector);
     if (nextLogicalClusterValue >= 0x0FF8 && nextLogicalClusterValue <= 0x0FFF)
     {
-        if (hasParam == LS_NO_PARAM)
-        {
-            printf("%s/:\n", dir);
-            printEntries(directoryEntries, flags, entryNum);
-        }
-        else
-        {
-            int dn = 0, fn = 0;
-            for (size_t i = 0; i < entryNum; i++)
-            {
-                if (flags[i] == ENTRY_DIRECTORY)
-                {
-                    dn++;
-                }
-                else if (flags[i] == ENTRY_FILE)
-                {
-                    fn++;
-                }
-            }
-            printf("%s %d %d:\n", dir, dn, fn);
-            for (size_t i = 0; i < entryNum; i++)
-            {
-                if (flags[i] == ENTRY_DIRECTORY)
-                {
-                    int logClstr = dirLogicalClusters[i];
-                    int dirNum = 0, fileNum = 0;
-                    int flags[224];
-                    countDirAndFile(fat12, bootSector, logClstr, flags, 0);
-                    char *sp[224];
-                    int count = splits(directoryEntries[i], sp, '/');
-                    printf("%s %d %d\n", sp[count - 1], dirNum, fileNum);
-                }
-                else
-                {
-                    printf("%s\n", directoryEntries[i]);
-                }
-            }
-        }
-        printf("\n");
+        lsPrint(fat12, bootSector, hasParam, dir, directoryEntries, dirLogicalClusters, flags, entryNum);
 
         // now there are no clusters left, continue to scan the subdirectories one by one
         for (size_t i = 0; i < entryNum; i++)
