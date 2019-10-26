@@ -7,7 +7,16 @@ LD = ld
 my_print.o: my_print.asm
 	${AS} -f elf64 -o $@ $<
 
-main.o:	main.c
+error.o: error.c headers/error.h headers/includes.h
+	${CC} -c -o $@ $<
+
+fat.o: fat.c headers/fat.h headers/includes.h
+	${CC} -c -o $@ $<
+
+command.o: command.c headers/command.h headers/includes.h
+	${CC} -c -o $@ $<
+
+main.o:	main.c headers/fat.h headers/error.h headers/command.h headers/includes.h
 	${CC} -c -o $@ $<
 
 fat12Driver: main.o my_print.o
@@ -16,7 +25,7 @@ fat12Driver: main.o my_print.o
 
 build: fat12Driver clean
 
-main.run: main.c
+main.run: main.o fat.o error.o command.o
 	@${CC} -o $@ $?
 	@./$@
 

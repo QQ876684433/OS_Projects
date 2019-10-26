@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "includes.h": "c",
+        "fat.h": "c",
+        "error.h": "c",
+        "command.h": "c"
+    }
+}
