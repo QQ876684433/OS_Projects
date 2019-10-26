@@ -81,11 +81,15 @@ void loadBootSector(FILE *, struct BootSector *);
 // tree
 void tree(FILE *);
 // ls
-void ls(FILE *, char *, int);
+void ls(FILE *, char *, int, char *[], int *, int);
 // map directory entry to struct
 void mapDirEntry(FILE *, struct DirEntry *, int);
 // combine file or subdirectory name and  extension
 char *extractFileName(char *fileName);
+// given logical cluster value, calculate the base of the physical sector
+int getPhysicalBase(int);
+// given the current logical cluster value, get next logical cluster value, return 1 if successful and 0 otherwise
+u16 getNextLogicalCluster(FILE *, int);
 
 int main(int argc, char const *argv[])
 {
@@ -159,7 +163,7 @@ void tree(FILE *fat12)
     printf("[DIR]/:\n");
 
     char *fullNames[224];
-    int bases[224];
+    int logicalClusters[224];
     int index = 0;
 
     struct DirEntry dirEntry;
@@ -170,6 +174,7 @@ void tree(FILE *fat12)
     struct FileName fileName;
     for (size_t i = 0; i < bootSector->BS_MaxNumOfRootDirectoryEntries; i++, base += 32)
     {
+        // printf("%d ", i);
         mapDirEntry(fat12, de_ptr, base);
 
         /*
@@ -205,10 +210,9 @@ void tree(FILE *fat12)
             memset(fullName, 0, 100);
             fullName[0] = '/';
             strcpy(fullName + 1, fileName);
-            int base = (dirEntry.DE_FirstLogicalCluster + 31) * bootSector->BS_BytesPerSector;
             // ls(fat12, fullName, base);
             fullNames[index] = fullName;
-            bases[index++] = base;
+            logicalClusters[index++] = dirEntry.DE_FirstLogicalCluster;
         }
         else
         {
@@ -220,20 +224,25 @@ void tree(FILE *fat12)
 
     for (size_t i = 0; i < index; i++)
     {
-        ls(fat12, fullNames[i], bases[i]);
+        char *l_fullNames[224];
+        int l_logicalClusters[224];
+        ls(fat12, fullNames[i], logicalClusters[i], l_fullNames, l_logicalClusters, 0);
     }
 }
 
-void ls(FILE *fat12, char *dir, int base)
+void ls(FILE *fat12, char *dir, int logicalCluster, char *fullNames[], int *logicalClusters, int dirNum)
 {
-    char *fullNames[224];
-    int bases[224];
-    int index = 0;
+    int base = getPhysicalBase(logicalCluster);
+    // char *fullNames[224];
+    // int logicalClusters[224];
+    // int index = 0;
 
-    printf("[DIR]%s/:\n", dir);
+    if (dirNum == 0)
+        printf("[DIR]%s/:\n", dir);
     struct DirEntry dirEntry;
     for (size_t i = 0; i < DIR_ENTRY_PER_SECTOR; i++, base += 32)
     {
+        // printf("%d ", i);
         mapDirEntry(fat12, &dirEntry, base);
 
         if (dirEntry.DE_Filename[0] == 0x00)
@@ -267,10 +276,9 @@ void ls(FILE *fat12, char *dir, int base)
                 int len = strlen(dir);
                 fullName[len++] = '/';
                 strcpy(fullName + len, fileName);
-                int base = (dirEntry.DE_FirstLogicalCluster + 31) * bootSector->BS_BytesPerSector;
                 // ls(fat12, fullName, base);
-                fullNames[index] = fullName;
-                bases[index++] = base;
+                fullNames[dirNum] = fullName;
+                logicalClusters[dirNum++] = dirEntry.DE_FirstLogicalCluster;
             }
         }
         else
@@ -279,11 +287,36 @@ void ls(FILE *fat12, char *dir, int base)
             printf("[FILE]%s ", fileName);
         }
     }
-    printf("\n");
 
-    for (size_t i = 0; i < index; i++)
+    // check if it's the last cluster
+    // if not, continue to scan the next cluster
+    /**
+     * Value            Meaning
+     * 0x00             Unused
+     * 0xFF0-0xFF6      Reserved cluster
+     * 0xFF7            Bad cluster
+     * 0xFF8-0xFFF      Last cluster in a file
+     * (anything else)  Number of the next cluster in the file
+     */
+    u16 nextLogicalClusterValue = getNextLogicalCluster(fat12, logicalCluster);
+    // printf("next cluster: %d\n", nextLogicalClusterValue);
+    if (nextLogicalClusterValue >= 0x0FF8 && nextLogicalClusterValue <= 0x0FFF)
     {
-        ls(fat12, fullNames[i], bases[i]);
+        printf("\n");
+
+        // now there are no clusters left, continue to scan the subdirectories one by one
+        for (size_t i = 0; i < dirNum; i++)
+        {
+            // ls(fat12, fullNames[i], logicalClusters[i]);
+            char *l_fullNames[224];
+            int l_logicalClusters[224];
+            ls(fat12, fullNames[i], logicalClusters[i], l_fullNames, l_logicalClusters, 0);
+        }
+    }
+    else if (nextLogicalClusterValue > 0x001 && nextLogicalClusterValue < 0xFF0)
+    {
+        // ok, current cluster is not the last
+        ls(fat12, dir, nextLogicalClusterValue, fullNames, logicalClusters, dirNum);
     }
 }
 
@@ -315,4 +348,48 @@ char *extractFileName(char *fileName)
     }
 
     return name;
+}
+
+int getPhysicalBase(int logicalCluster)
+{
+    return (logicalCluster + 31) * bootSector->BS_BytesPerSector;
+}
+
+u16 getNextLogicalCluster(FILE *fat12, int curLogicalCluster)
+{
+    int startOfFatTables = bootSector->BS_NumberOfReservedSectors * bootSector->BS_BytesPerSector + curLogicalCluster * 3 / 2;
+
+    int type = 0; // 偶数簇
+    if (curLogicalCluster % 2 == 1)
+    { //奇数簇
+        type = 1;
+    }
+
+    //fat 默认保留两簇
+    u16 nextLogicalCluster;
+
+    int check = fseek(fat12, startOfFatTables, SEEK_SET);
+    if (check == -1)
+    {
+        printf("failed to locate FAT tables!\n");
+        exit(1);
+    }
+
+    check = fread(&nextLogicalCluster, 1, 2, fat12);
+    if (check != 2)
+    {
+        printf("failed to read FAT tables!\n");
+        exit(1);
+    }
+
+    //u16为short，结合存储的小尾顺序和FAT项结构可以得到
+    if (type == 0)
+    {
+        nextLogicalCluster = (nextLogicalCluster & 0x0fff);
+    }
+    else
+    {
+        nextLogicalCluster = (nextLogicalCluster >> 4);
+    }
+    return nextLogicalCluster;
 }
