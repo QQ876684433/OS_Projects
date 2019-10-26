@@ -17,14 +17,30 @@ int main(int argc, char const *argv[])
     {
         printf(">");
         char command[100];
-        scanf("%s", command);
-        if (strcmp(command, EXIT) == 0)
+        // scanf("%s", command);
+        gets(command);
+
+        char *parts[100];
+        int count = splits(command, parts, ' ');
+        if (count == 0)
+        {
+            continue;
+        }
+
+        if (count == 1 && strcmp(parts[0], EXIT) == 0)
         {
             exit(0);
         }
-        else if (strcmp(command, LS) == 0)
+        else if (strcmp(parts[0], LS) == 0) // ls
         {
-            tree(fat12, &bs);
+            if (count == 1) // without parameters
+            {
+                tree(fat12, &bs, LS_NO_PARAM);
+            }
+            else
+            {
+                tree(fat12, &bs, LS_WITH_PARAM);
+            }
         }
     }
 

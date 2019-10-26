@@ -1,87 +1,26 @@
 #include "headers/command.h"
 
-void tree(FILE *fat12, struct BootSector *bootSector)
+void printEntries(char *fileOrDir[], int *flags, int entryNum)
 {
-    printf("/:\n");
-
-    char *fullNames[224];
-    int logicalClusters[224];
-    int index = 0;
-
-    struct DirEntry dirEntry;
-    struct DirEntry *de_ptr = &dirEntry;
-    int base =
-        (bootSector->BS_NumberOfReservedSectors + bootSector->BS_NumberOfFATs * bootSector->BS_SectorsPerFAT) * bootSector->BS_BytesPerSector;
-
-    struct FileName fileName;
-    for (size_t i = 0; i < bootSector->BS_MaxNumOfRootDirectoryEntries; i++, base += 32)
+    for (size_t i = 0; i < entryNum; i++)
     {
-        // printf("%d ", i);
-        mapDirEntry(fat12, de_ptr, base);
-
-        /*
-		 *	2. If the first byte of the Filename field is 0xE5, then the directory entry is free (i.e., currently
-		 * unused), and hence there is no file or subdirectory associated with the directory entry.
-		 *	3. If the first byte of the Filename field is 0x00, then this directory entry is free and all the
-		 * remaining directory entries in this directory are also free
-		 */
-        if (dirEntry.DE_Filename[0] == 0x00)
-        {
-            break;
-        }
-        else if (dirEntry.DE_Filename[0] == 0xE5)
-        {
-            continue;
-        }
-
-        // now current entry is in use
-        char *fileName = extractFileName(dirEntry.DE_Filename);
-
-        // skip hidden file or directories
-        if ((dirEntry.DE_Attributes & 0x02) != 0)
-        {
-            continue;
-        }
-
-        if ((dirEntry.DE_Attributes & 0x10) != 0)
-        {
-            // SubDirectory
-            printf("%s  ", fileName);
-
-            char *fullName = (char *)malloc(100);
-            memset(fullName, 0, 100);
-            fullName[0] = '/';
-            strcpy(fullName + 1, fileName);
-            // ls(fat12, fullName, base);
-            fullNames[index] = fullName;
-            logicalClusters[index++] = dirEntry.DE_FirstLogicalCluster;
-        }
-        else
-        {
-            // file
-            printf("%s  ", fileName);
-        }
-    }
-    printf("\n");
-
-    for (size_t i = 0; i < index; i++)
-    {
-        char *l_fullNames[224];
-        int l_logicalClusters[224];
-        ls(fat12, bootSector, fullNames[i], logicalClusters[i], l_fullNames, l_logicalClusters, 0);
+        char *sp[224];
+        int count = splits(fileOrDir[i], sp, '/');
+        printf("%s  ", sp[count - 1]);
     }
 }
 
-void ls(FILE *fat12, struct BootSector *bootSector, char *dir, int logicalCluster, char *fullNames[], int *logicalClusters, int dirNum)
+char *getLastDir(char *dirName)
+{
+}
+
+void countDirAndFile(FILE *fat12, struct BootSector *bootSector, int logicalCluster, int *flags, int entryNum)
 {
     int base = getPhysicalBase(logicalCluster, bootSector);
 
-    if (dirNum == 0)
-        printf("%s/:\n", dir);
     struct DirEntry dirEntry;
     for (size_t i = 0; i < DIR_ENTRY_PER_SECTOR; i++, base += 32)
     {
-        // printf("%d ", i);
         mapDirEntry(fat12, &dirEntry, base);
 
         if (dirEntry.DE_Filename[0] == 0x00)
@@ -105,8 +44,176 @@ void ls(FILE *fat12, struct BootSector *bootSector, char *dir, int logicalCluste
         if ((dirEntry.DE_Attributes & 0x10) != 0)
         {
             // SubDirectory
-            printf("%s  ", fileName);
+            if (strcmp(fileName, ".") != 0 && strcmp(fileName, "..") != 0)
+            {
+                flags[entryNum++] = ENTRY_DIRECTORY;
+            }
+        }
+        else
+        {
+            // file
+            flags[entryNum++] = ENTRY_FILE;
+        }
+    }
 
+    // check if it's the last cluster
+    u16 nextLogicalClusterValue = getNextLogicalCluster(fat12, logicalCluster, bootSector);
+    if (nextLogicalClusterValue > 0x001 && nextLogicalClusterValue < 0xFF0)
+    {
+        // ok, current cluster is not the last
+        countDirAndFile(fat12, bootSector, nextLogicalClusterValue, flags, entryNum);
+    }
+}
+
+/**
+ * ======================================================================================================================================================
+ * ======================================================================================================================================================
+ */
+
+void tree(FILE *fat12, struct BootSector *bootSector, int hasParam)
+{
+    char *directoryEntries[224];
+    int logicalClusters[224];
+    int flags[224];
+    int entryNum = 0;
+
+    struct DirEntry dirEntry;
+    struct DirEntry *de_ptr = &dirEntry;
+    int base =
+        (bootSector->BS_NumberOfReservedSectors + bootSector->BS_NumberOfFATs * bootSector->BS_SectorsPerFAT) * bootSector->BS_BytesPerSector;
+
+    struct FileName fileName;
+    for (size_t i = 0; i < bootSector->BS_MaxNumOfRootDirectoryEntries; i++, base += 32)
+    {
+        mapDirEntry(fat12, de_ptr, base);
+
+        /*
+		 *	2. If the first byte of the Filename field is 0xE5, then the directory entry is free (i.e., currently
+		 * unused), and hence there is no file or subdirectory associated with the directory entry.
+		 *	3. If the first byte of the Filename field is 0x00, then this directory entry is free and all the
+		 * remaining directory entries in this directory are also free
+		 */
+        if (dirEntry.DE_Filename[0] == 0x00)
+        {
+            break;
+        }
+        else if (dirEntry.DE_Filename[0] == 0xE5)
+        {
+            continue;
+        }
+
+        // now current entry is in use
+        char *fileName = extractFileName(dirEntry.DE_Filename);
+
+        // skip hidden file or directories
+        if (isHidden(dirEntry.DE_Attributes))
+        {
+            continue;
+        }
+
+        if (isSubDirectory(dirEntry.DE_Attributes))
+        {
+            // SubDirectory
+            char *fullName = (char *)malloc(100);
+            memset(fullName, 0, 100);
+            fullName[0] = '/';
+            strcpy(fullName + 1, fileName);
+            directoryEntries[entryNum] = fullName;
+            logicalClusters[entryNum] = dirEntry.DE_FirstLogicalCluster;
+            flags[entryNum] = ENTRY_DIRECTORY;
+        }
+        else
+        {
+            // file
+            directoryEntries[entryNum] = fileName;
+            logicalClusters[entryNum] = dirEntry.DE_FirstLogicalCluster;
+            flags[entryNum] = ENTRY_FILE;
+        }
+        entryNum++;
+    }
+
+    if (hasParam == LS_NO_PARAM)
+    {
+        printf("/:\n");
+        printEntries(directoryEntries, flags, entryNum);
+    }
+    else
+    {
+        int dn = 0, fn = 0;
+        for (size_t i = 0; i < entryNum; i++)
+        {
+            if (flags[i] == ENTRY_DIRECTORY)
+            {
+                dn++;
+            }
+            else
+            {
+                fn++;
+            }
+        }
+        printf("/ %d %d:\n", dn, fn);
+        for (size_t i = 0; i < entryNum; i++)
+        {
+            if (flags[i] == ENTRY_DIRECTORY)
+            {
+                int logClstr = logicalClusters[i];
+                int dirNum = 0, fileNum = 0;
+                int flags[224];
+                countDirAndFile(fat12, bootSector, logClstr, flags, 0);
+                char *sp[224];
+                int count = splits(directoryEntries[i], sp, '/');
+                printf("%s %d %d\n", sp[count - 1], dirNum, fileNum);
+            }
+            else
+            {
+                printf("%s\n", directoryEntries[i]);
+            }
+        }
+    }
+    printf("\n");
+
+    for (size_t i = 0; i < entryNum; i++)
+    {
+        if (flags[i] == ENTRY_DIRECTORY)
+        {
+            char *l_directoryEntries[224];
+            int l_dirLogicalClusters[224];
+            int l_flags[224];
+            ls(fat12, bootSector, hasParam, directoryEntries[i], logicalClusters[i], l_directoryEntries, l_dirLogicalClusters, l_flags, 0);
+        }
+    }
+}
+
+void ls(FILE *fat12, struct BootSector *bootSector, int hasParam, char *dir, int logicalCluster, char *directoryEntries[], int *dirLogicalClusters, int *flags, int entryNum)
+{
+    int base = getPhysicalBase(logicalCluster, bootSector);
+
+    struct DirEntry dirEntry;
+    for (size_t i = 0; i < DIR_ENTRY_PER_SECTOR; i++, base += 32)
+    {
+        mapDirEntry(fat12, &dirEntry, base);
+
+        if (dirEntry.DE_Filename[0] == 0x00)
+        {
+            break;
+        }
+        else if (dirEntry.DE_Filename[0] == 0xE5)
+        {
+            continue;
+        }
+
+        // now DirEntry is in use
+        char *fileName = extractFileName(dirEntry.DE_Filename);
+
+        // skip hidden file or directories
+        if ((dirEntry.DE_Attributes & 0x02) != 0)
+        {
+            continue;
+        }
+
+        if ((dirEntry.DE_Attributes & 0x10) != 0)
+        {
+            // SubDirectory
             if (strcmp(fileName, ".") != 0 && strcmp(fileName, "..") != 0)
             {
                 char *fullName = (char *)malloc(100);
@@ -115,16 +222,24 @@ void ls(FILE *fat12, struct BootSector *bootSector, char *dir, int logicalCluste
                 int len = strlen(dir);
                 fullName[len++] = '/';
                 strcpy(fullName + len, fileName);
-                // ls(fat12, fullName, base);
-                fullNames[dirNum] = fullName;
-                logicalClusters[dirNum++] = dirEntry.DE_FirstLogicalCluster;
+                directoryEntries[entryNum] = fullName;
+                dirLogicalClusters[entryNum] = dirEntry.DE_FirstLogicalCluster;
+                flags[entryNum] = ENTRY_DIRECTORY;
+            }
+            else
+            {
+                directoryEntries[entryNum] = fileName;
+                flags[entryNum] = ENTRY_DIR_SPECIAL;
             }
         }
         else
         {
             // file
-            printf("%s  ", fileName);
+            directoryEntries[entryNum] = fileName;
+            dirLogicalClusters[entryNum] = dirEntry.DE_FirstLogicalCluster;
+            flags[entryNum] = ENTRY_FILE;
         }
+        entryNum++;
     }
 
     // check if it's the last cluster
@@ -138,38 +253,78 @@ void ls(FILE *fat12, struct BootSector *bootSector, char *dir, int logicalCluste
      * (anything else)  Number of the next cluster in the file
      */
     u16 nextLogicalClusterValue = getNextLogicalCluster(fat12, logicalCluster, bootSector);
-    // printf("next cluster: %d\n", nextLogicalClusterValue);
     if (nextLogicalClusterValue >= 0x0FF8 && nextLogicalClusterValue <= 0x0FFF)
     {
+        if (hasParam == LS_NO_PARAM)
+        {
+            printf("%s/:\n", dir);
+            printEntries(directoryEntries, flags, entryNum);
+        }
+        else
+        {
+            int dn = 0, fn = 0;
+            for (size_t i = 0; i < entryNum; i++)
+            {
+                if (flags[i] == ENTRY_DIRECTORY)
+                {
+                    dn++;
+                }
+                else if (flags[i] == ENTRY_FILE)
+                {
+                    fn++;
+                }
+            }
+            printf("%s %d %d:\n", dir, dn, fn);
+            for (size_t i = 0; i < entryNum; i++)
+            {
+                if (flags[i] == ENTRY_DIRECTORY)
+                {
+                    int logClstr = dirLogicalClusters[i];
+                    int dirNum = 0, fileNum = 0;
+                    int flags[224];
+                    countDirAndFile(fat12, bootSector, logClstr, flags, 0);
+                    char *sp[224];
+                    int count = splits(directoryEntries[i], sp, '/');
+                    printf("%s %d %d\n", sp[count - 1], dirNum, fileNum);
+                }
+                else
+                {
+                    printf("%s\n", directoryEntries[i]);
+                }
+            }
+        }
         printf("\n");
 
         // now there are no clusters left, continue to scan the subdirectories one by one
-        for (size_t i = 0; i < dirNum; i++)
+        for (size_t i = 0; i < entryNum; i++)
         {
-            // ls(fat12, fullNames[i], logicalClusters[i]);
-            char *l_fullNames[224];
-            int l_logicalClusters[224];
-            ls(fat12, bootSector, fullNames[i], logicalClusters[i], l_fullNames, l_logicalClusters, 0);
+            if (flags[i] == ENTRY_DIRECTORY)
+            {
+                char *l_directoryEntries[224];
+                int l_dirLogicalClusters[224];
+                int l_flags[224];
+                ls(fat12, bootSector, hasParam, directoryEntries[i], dirLogicalClusters[i], l_directoryEntries, l_dirLogicalClusters, l_flags, 0);
+            }
         }
     }
     else if (nextLogicalClusterValue > 0x001 && nextLogicalClusterValue < 0xFF0)
     {
         // ok, current cluster is not the last
-        ls(fat12, bootSector, dir, nextLogicalClusterValue, fullNames, logicalClusters, dirNum);
+        ls(fat12, bootSector, hasParam, dir, nextLogicalClusterValue, directoryEntries, dirLogicalClusters, flags, entryNum);
     }
 }
 
 // example below works, and the　redundant will be ignored
 // "       ls -l         nju.txt       -ll         "
-int splits(char *src, char *target[])
+int splits(char *src, char *target[], char token)
 {
-    int index = 0;
+    int dirEntryNum = 0;
     int count = 0;
     char *part;
     // trim space
-    while (src[index] == ' ')
-        index++;
-    if (src[index] == 0)
+    while (src[dirEntryNum] == token)
+        dirEntryNum++;
+    if (src[dirEntryNum] == 0)
     {
         return count;
     }
@@ -179,15 +334,15 @@ int splits(char *src, char *target[])
         part = (char *)malloc(sizeof(char) * 100);
         memset(part, 0, 100);
 
-        int ptr = index;
+        int ptr = dirEntryNum;
         while (1)
         {
-            if (src[ptr] == ' ')
+            if (src[ptr] == token)
             {
                 target[count++] = part;
 
                 // trim space
-                while (src[ptr] == ' ')
+                while (src[ptr] == token)
                     ptr++;
                 if (src[ptr] == 0)
                 {
@@ -195,7 +350,7 @@ int splits(char *src, char *target[])
                 }
                 else
                 {
-                    index = ptr;
+                    dirEntryNum = ptr;
                 }
 
                 break;
@@ -205,7 +360,7 @@ int splits(char *src, char *target[])
                 target[count++] = part;
                 return count;
             }
-            part[ptr - index] = src[ptr];
+            part[ptr - dirEntryNum] = src[ptr];
             ptr++;
         }
     }

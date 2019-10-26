@@ -126,3 +126,13 @@ void showBootSectorInfo(struct BootSector *bs)
     printf("根目录文件数最大值:%d\n", bs->BS_MaxNumOfRootDirectoryEntries);
     printf("一个FAT占用扇区数:%d\n", bs->BS_SectorsPerFAT);
 }
+
+int isHidden(unsigned int attr)
+{
+    return (attr & 0x02) != 0;
+}
+
+int isSubDirectory(unsigned int attr)
+{
+    return (attr & 0x10) != 0;
+}

@@ -87,4 +87,8 @@ u16 getNextLogicalCluster(FILE *, int, struct BootSector *);
 // show basic information in boot sector
 void showBootSectorInfo(struct BootSector *);
 
+// Directory Entry Attribute Util Functions
+int isHidden(unsigned int attr);
+int isSubDirectory(unsigned int attr);
+
 #endif
