@@ -5,6 +5,8 @@
 
 #define IMAGE "images/a.img"
 
+char *mygets(char *buf, size_t size);
+
 int main(int argc, char const *argv[])
 {
     FILE *fat12 = fopen(IMAGE, "rb");
@@ -18,7 +20,8 @@ int main(int argc, char const *argv[])
         printf(">");
         char command[100];
         // scanf("%s", command);
-        gets(command);
+        // gets(command);
+        mygets(command, sizeof command);
 
         char *parts[100];
         int count = splits(command, parts, ' ');
@@ -45,4 +48,18 @@ int main(int argc, char const *argv[])
     }
 
     return 0;
+}
+
+char *mygets(char *buf, size_t size)
+{
+    if (buf != NULL && size > 0)
+    {
+        if (fgets(buf, size, stdin))
+        {
+            buf[strcspn(buf, "\n")] = '\0';
+            return buf;
+        }
+        *buf = '\0'; /* clear buffer at end of file */
+    }
+    return NULL;
 }

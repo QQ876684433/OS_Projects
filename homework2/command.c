@@ -51,7 +51,7 @@ void countDirAndFile(FILE *fat12, struct BootSector *bootSector, int logicalClus
     }
 }
 
-void lsPrint(FILE*fat12, struct BootSector* bootSector, int hasParam, char *dir, char *directoryEntries[], char *dirLogicalClusters[], int *flags, int entryNum){
+void lsPrint(FILE*fat12, struct BootSector* bootSector, int hasParam, char *dir, char *directoryEntries[], int dirLogicalClusters[], int *flags, int entryNum){
     if (hasParam == LS_NO_PARAM)
     {
         printf("%s/:\n", dir);
