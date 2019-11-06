@@ -1,5 +1,44 @@
 #include "headers/error.h"
 
+int FLAGS_PATH;
+
+void INIT_PATH_FLAGS(int flag)
+{
+    FLAGS_PATH = flag;
+}
+
+void PATH_SET_FOUND()
+{
+    FLAGS_PATH = PATH_FOUND;
+}
+
+void PATH_FLAGS_CHECK()
+{
+    switch (FLAGS_PATH)
+    {
+    case PATH_DIR_NOT_FOUND:
+        printf("\033[31mPath Not Found!\033[0m\n");
+        break;
+
+    case PATH_FILE_NOT_FOUND:
+        printf("\033[31mFile Not Found!\033[0m\n");
+        break;
+
+    default:
+        break;
+    }
+}
+
+void PATH_SET_DIR_NOT_FOUND()
+{
+    FLAGS_PATH = PATH_DIR_NOT_FOUND;
+}
+
+void PATH_SET_FILE_NOT_FOUND()
+{
+    FLAGS_PATH = PATH_FILE_NOT_FOUND;
+}
+
 void LOAD_BOOT_SECTOR_ERROR()
 {
     printf("failed to load Boot Sector!\n");
@@ -43,4 +82,32 @@ void LOCATE_FILE_ERROR()
 void READ_FILE_ERROR()
 {
     printf("failed to read file!\n");
+}
+
+//===================================================
+//===================================================
+
+void WRONG_OPERATION()
+{
+    printf("\033[31mWrong Operation!\033[0m\n");
+}
+
+void LS_WRONG_PARAM()
+{
+    printf("\033[31mWrong Parameter!\033[0m\n");
+}
+
+void LS_TOO_MANY_PATH()
+{
+    printf("\033[31mToo Many Paths!\033[0m\n");
+}
+
+void CAT_TOO_MANY_PARAM()
+{
+    printf("\033[31mToo Many Parameters!\033[0m\n");
+}
+
+void CAT_NOT_ENOUTH_PARAM()
+{
+    printf("\033[31mNot Enough Parameters!\033[0m\n");
 }

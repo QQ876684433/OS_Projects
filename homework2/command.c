@@ -24,6 +24,8 @@ void tree(FILE *fat12, struct BootSector *bootSector, int hasParam, char *target
 
             if (flags[i] == ENTRY_FILE && strcmp(path, target) == 0)
             {
+                // 将路径标志为存在
+                PATH_SET_FOUND();
                 // print file content
                 cat(fat12, bootSector, logicalClusters[i], LS_WITH_CAT);
                 return;
@@ -31,7 +33,11 @@ void tree(FILE *fat12, struct BootSector *bootSector, int hasParam, char *target
         }
     }
     else if (isDirPrefixMatch(target, "") == 1)
+    {
+        // 将路径标志为存在
+        PATH_SET_FOUND();
         lsPrint(fat12, bootSector, hasParam, "", directoryEntries, logicalClusters, flags, entryNum);
+    }
 
     for (size_t i = 0; i < entryNum; i++)
     {
@@ -77,6 +83,8 @@ void ls(FILE *fat12, struct BootSector *bootSector, int hasParam, char *dir, cha
                 strcat(fullName, directoryEntries[i]);
                 if (strcmp(fullName, target) == 0)
                 {
+                    // 将路径标志为存在
+                    PATH_SET_FOUND();
                     cat(fat12, bootSector, dirLogicalClusters[i], LS_WITH_CAT);
                 }
             }
@@ -84,6 +92,8 @@ void ls(FILE *fat12, struct BootSector *bootSector, int hasParam, char *dir, cha
     }
     else if (isDirPrefixMatch(target, dir) == 1)
     {
+        // 将路径标志为存在
+        PATH_SET_FOUND();
         lsPrint(fat12, bootSector, hasParam, dir, directoryEntries, dirLogicalClusters, flags, entryNum);
     }
 
