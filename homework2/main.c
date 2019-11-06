@@ -38,12 +38,38 @@ int main(int argc, char const *argv[])
         {
             if (count == 1) // without parameters
             {
-                tree(fat12, &bs, LS_NO_PARAM, "");
+                tree(fat12, &bs, LS_NO_PARAM, "", LS_WITHOUT_CAT);
             }
             else
             {
-                tree(fat12, &bs, LS_WITH_PARAM, "");
+                tree(fat12, &bs, LS_WITH_PARAM, parts[1], LS_WITHOUT_CAT);
             }
+        }
+        else if (strcmp(parts[0], CAT) == 0)
+        {
+            if (count > 2)
+            {
+                printf("Two many parameters! \n");
+            }
+            else if (count < 2)
+            {
+                printf("No enough parameters! \n");
+            }
+            else
+            {
+                char *path = (char *)malloc(100);
+                memset(path, 0, 100);
+                if (parts[1][0] != '/')
+                {
+                    path[0] = '/';
+                }
+                strcat(path, parts[1]);
+                tree(fat12, &bs, LS_NO_PARAM, path, LS_WITH_CAT);
+            }
+        }
+        else
+        {
+            printf("Wrong operation!\n");
         }
     }
 

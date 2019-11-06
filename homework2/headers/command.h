@@ -23,9 +23,9 @@
  */
 
 // tree
-void tree(FILE *, struct BootSector *, int, char *);
+void tree(FILE *, struct BootSector *, int, char *, int);
 // ls
-void ls(FILE *, struct BootSector *, int, char *, char *, int, char *[], int *, int *, int);
+void ls(FILE *, struct BootSector *, int, char *, char *, int, char *[], int *, int *, int, int);
 // cat
 int cat(FILE *, struct BootSector *, int, int);
 

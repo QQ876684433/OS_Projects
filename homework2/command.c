@@ -1,13 +1,36 @@
 #include "headers/command.h"
 
-void tree(FILE *fat12, struct BootSector *bootSector, int hasParam, char *target)
+void tree(FILE *fat12, struct BootSector *bootSector, int hasParam, char *target, int operation)
 {
     char *directoryEntries[224];
     int logicalClusters[224];
     int flags[224];
     int entryNum = 0;
     getRootDirectories(fat12, bootSector, directoryEntries, logicalClusters, flags, &entryNum);
-    if (isDirPrefixMatch(target, "") == 1)
+    if (operation == LS_WITH_CAT)
+    {
+        for (size_t i = 0; i < entryNum; i++)
+        {
+            // let examples below make sense
+            //
+            // >cat TEST1.TXT
+            // this is a test file for fat12
+            // >cat /TEST1.TXT
+            // this is a test file for fat12
+            char *path = (char *)malloc(100);
+            memset(path, 0, 100);
+            path[0] = '/';
+            strcat(path, directoryEntries[i]);
+
+            if (flags[i] == ENTRY_FILE && strcmp(path, target) == 0)
+            {
+                // print file content
+                cat(fat12, bootSector, logicalClusters[i], LS_WITH_CAT);
+                return;
+            }
+        }
+    }
+    else if (isDirPrefixMatch(target, "") == 1)
         lsPrint(fat12, bootSector, hasParam, "", directoryEntries, logicalClusters, flags, entryNum);
 
     for (size_t i = 0; i < entryNum; i++)
@@ -17,16 +40,16 @@ void tree(FILE *fat12, struct BootSector *bootSector, int hasParam, char *target
             char *l_directoryEntries[224];
             int l_dirLogicalClusters[224];
             int l_flags[224];
-            ls(fat12, bootSector, hasParam, directoryEntries[i], target, logicalClusters[i], l_directoryEntries, l_dirLogicalClusters, l_flags, 0);
+            ls(fat12, bootSector, hasParam, directoryEntries[i], target, logicalClusters[i], l_directoryEntries, l_dirLogicalClusters, l_flags, 0, operation);
         }
     }
 }
 
-void ls(FILE *fat12, struct BootSector *bootSector, int hasParam, char *dir, char *target, int logicalCluster, char *directoryEntries[], int *dirLogicalClusters, int *flags, int entryNum)
+void ls(FILE *fat12, struct BootSector *bootSector, int hasParam, char *dir, char *target, int logicalCluster, char *directoryEntries[], int *dirLogicalClusters, int *flags, int entryNum, int operation)
 {
     getNonRootDirectories(fat12, bootSector, logicalCluster, dir, directoryEntries, dirLogicalClusters, flags, &entryNum);
 
-    // add dir perfix to directory entries
+    // add dir prefix to directory entries
     for (size_t i = 0; i < entryNum; i++)
     {
         if (flags[i] == ENTRY_DIRECTORY)
@@ -40,7 +63,26 @@ void ls(FILE *fat12, struct BootSector *bootSector, int hasParam, char *dir, cha
             directoryEntries[i] = fullName;
         }
     }
-    if (isDirPrefixMatch(target, dir) == 1)
+
+    if (operation == LS_WITH_CAT)
+    {
+        for (size_t i = 0; i < entryNum; i++)
+        {
+            if (flags[i] == ENTRY_FILE)
+            {
+                char *fullName = (char *)malloc(100);
+                memset(fullName, 0, 100);
+                strcat(fullName, dir);
+                strcat(fullName, "/");
+                strcat(fullName, directoryEntries[i]);
+                if (strcmp(fullName, target) == 0)
+                {
+                    cat(fat12, bootSector, dirLogicalClusters[i], LS_WITH_CAT);
+                }
+            }
+        }
+    }
+    else if (isDirPrefixMatch(target, dir) == 1)
     {
         lsPrint(fat12, bootSector, hasParam, dir, directoryEntries, dirLogicalClusters, flags, entryNum);
     }
@@ -53,7 +95,7 @@ void ls(FILE *fat12, struct BootSector *bootSector, int hasParam, char *dir, cha
             char *l_directoryEntries[224];
             int l_dirLogicalClusters[224];
             int l_flags[224];
-            ls(fat12, bootSector, hasParam, directoryEntries[i], target, dirLogicalClusters[i], l_directoryEntries, l_dirLogicalClusters, l_flags, 0);
+            ls(fat12, bootSector, hasParam, directoryEntries[i], target, dirLogicalClusters[i], l_directoryEntries, l_dirLogicalClusters, l_flags, 0, operation);
         }
     }
 }
@@ -255,7 +297,7 @@ void lsPrint(FILE *fat12, struct BootSector *bootSector, int hasParam, char *dir
             }
             else
             {
-                // print file content
+                // get file size
                 int size = cat(fat12, bootSector, dirLogicalClusters[i], LS_WITHOUT_CAT);
                 printf("%s  %d\n", directoryEntries[i], size);
             }
