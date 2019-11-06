@@ -11,6 +11,9 @@
 #define LS_WITH_PARAM 1
 #define LS_NO_PARAM 0
 
+#define LS_WITH_CAT 1
+#define LS_WITHOUT_CAT 0
+
 #define ENTRY_DIRECTORY 1
 #define ENTRY_FILE 0
 #define ENTRY_DIR_SPECIAL 2
@@ -23,6 +26,8 @@
 void tree(FILE *, struct BootSector *, int, char *);
 // ls
 void ls(FILE *, struct BootSector *, int, char *, char *, int, char *[], int *, int *, int);
+// cat
+int cat(FILE *, struct BootSector *, int, int);
 
 /**
  * util function
@@ -34,7 +39,7 @@ int splits(char *, char *[], char);
 void countDirAndFile(FILE *fat12, struct BootSector *bootSector, int logicalCluster, int *flags, int entryNum);
 //
 void lsPrint(FILE *fat12, struct BootSector *bootSector, int hasParam, char *dir, char *directoryEntries[], int dirLogicalClusters[], int *flags, int entryNum);
-// 
+//
 int isDirPrefixMatch(char *, char *);
 
 #endif

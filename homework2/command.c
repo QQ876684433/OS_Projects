@@ -58,6 +58,46 @@ void ls(FILE *fat12, struct BootSector *bootSector, int hasParam, char *dir, cha
     }
 }
 
+int cat(FILE *fat12, struct BootSector *bootSector, int logicalCluster, int isPrint)
+{
+    int base = getPhysicalBase(logicalCluster, bootSector);
+    u8 *buffer = (u8 *)malloc(bootSector->BS_BytesPerSector);
+    memset(buffer, 0, bootSector->BS_BytesPerSector);
+    int index = fseek(fat12, base, SEEK_SET);
+    if (index != 0)
+    {
+        LOCATE_FILE_ERROR();
+    }
+
+    index = fread(buffer, 1, bootSector->BS_BytesPerSector, fat12);
+    if (index != bootSector->BS_BytesPerSector)
+    {
+        READ_FILE_ERROR();
+    }
+
+    // print the content read
+    if (isPrint == LS_WITH_CAT)
+        printf("%s", buffer);
+    // calculate file size
+    int size = 0;
+    for (size_t i = 0; i < bootSector->BS_BytesPerSector; i++)
+    {
+        if (buffer[i] != 0)
+        {
+            size++;
+        }
+    }
+
+    // check if it's the last cluster
+    u16 nextLogicalClusterValue = getNextLogicalCluster(fat12, logicalCluster, bootSector);
+    if (nextLogicalClusterValue > 0x001 && nextLogicalClusterValue < 0xFF0)
+    {
+        // ok, current cluster is not the last
+        size += cat(fat12, bootSector, nextLogicalClusterValue, isPrint);
+    }
+    return size;
+}
+
 // example below works, and the　redundant will be ignored
 // "       ls -l         nju.txt       -ll         "
 int splits(char *src, char *target[], char token)
@@ -207,7 +247,7 @@ void lsPrint(FILE *fat12, struct BootSector *bootSector, int hasParam, char *dir
                 countDirAndFile(fat12, bootSector, logClstr, flags, 0);
                 char *sp[224];
                 int count = splits(directoryEntries[i], sp, '/');
-                printf("\033[31m%s\033[0m %d %d\n", sp[count - 1], dirNum, fileNum);
+                printf("\033[31m%s\033[0m  %d %d\n", sp[count - 1], dirNum, fileNum);
             }
             else if (flags[i] == ENTRY_DIR_SPECIAL)
             {
@@ -215,7 +255,9 @@ void lsPrint(FILE *fat12, struct BootSector *bootSector, int hasParam, char *dir
             }
             else
             {
-                printf("%s\n", directoryEntries[i]);
+                // print file content
+                int size = cat(fat12, bootSector, dirLogicalClusters[i], LS_WITHOUT_CAT);
+                printf("%s  %d\n", directoryEntries[i], size);
             }
         }
     }

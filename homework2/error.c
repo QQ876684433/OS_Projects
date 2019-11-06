@@ -34,3 +34,13 @@ void LS_NO_SUCH_DIR()
 {
     printf("no such directory!\n");
 }
+
+void LOCATE_FILE_ERROR()
+{
+    printf("failed to locate file!\n");
+}
+
+void READ_FILE_ERROR()
+{
+    printf("failed to read file!\n");
+}
