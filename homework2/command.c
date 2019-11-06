@@ -171,7 +171,14 @@ void lsPrint(FILE *fat12, struct BootSector *bootSector, int hasParam, char *dir
         {
             char *sp[224];
             int count = splits(directoryEntries[i], sp, '/');
-            printf("%s  ", sp[count - 1]);
+            if (flags[i] == ENTRY_FILE)
+            {
+                printf("%s  ", sp[count - 1]);
+            }
+            else
+            {
+                printf("\033[31m%s\033[0m  ", sp[count - 1]);
+            }
         }
     }
     else
@@ -200,7 +207,11 @@ void lsPrint(FILE *fat12, struct BootSector *bootSector, int hasParam, char *dir
                 countDirAndFile(fat12, bootSector, logClstr, flags, 0);
                 char *sp[224];
                 int count = splits(directoryEntries[i], sp, '/');
-                printf("%s %d %d\n", sp[count - 1], dirNum, fileNum);
+                printf("\033[31m%s\033[0m %d %d\n", sp[count - 1], dirNum, fileNum);
+            }
+            else if (flags[i] == ENTRY_DIR_SPECIAL)
+            {
+                printf("\033[31m%s\033[0m\n", directoryEntries[i]);
             }
             else
             {
