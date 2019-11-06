@@ -65,6 +65,8 @@ struct DirEntry
     u32 DE_FileSize;            // 单位是字节
 };
 
+#include "command.h"
+
 /**
  * struct for file or directory name
  */
@@ -86,6 +88,10 @@ int getPhysicalBase(int, struct BootSector *);
 u16 getNextLogicalCluster(FILE *, int, struct BootSector *);
 // show basic information in boot sector
 void showBootSectorInfo(struct BootSector *);
+// get all Root Directory Entries list
+void getRootDirectories(FILE *, struct BootSector *, char *[], int *, int *, int *);
+// get non root Directory Entries list
+void getNonRootDirectories(FILE *, struct BootSector *, int, char *, char *[], int *, int *, int *);
 
 // Directory Entry Attribute Util Functions
 int isHidden(unsigned int attr);

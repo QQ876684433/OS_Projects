@@ -20,9 +20,9 @@
  */
 
 // tree
-void tree(FILE *, struct BootSector *, int);
+void tree(FILE *, struct BootSector *, int, char *);
 // ls
-void ls(FILE *, struct BootSector *, int, char *, int, char *[], int *,int *, int);
+void ls(FILE *, struct BootSector *, int, char *, char *, int, char *[], int *, int *, int);
 
 /**
  * util function
@@ -30,5 +30,11 @@ void ls(FILE *, struct BootSector *, int, char *, int, char *[], int *,int *, in
 
 // split command into several parts separated by space, return the number of parts
 int splits(char *, char *[], char);
+//
+void countDirAndFile(FILE *fat12, struct BootSector *bootSector, int logicalCluster, int *flags, int entryNum);
+//
+void lsPrint(FILE *fat12, struct BootSector *bootSector, int hasParam, char *dir, char *directoryEntries[], int dirLogicalClusters[], int *flags, int entryNum);
+// 
+int isDirPrefixMatch(char *, char *);
 
 #endif

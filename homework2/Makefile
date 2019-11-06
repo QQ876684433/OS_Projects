@@ -10,7 +10,7 @@ my_print.o: my_print.asm
 error.o: error.c headers/error.h headers/includes.h
 	${CC} -c -o $@ $<
 
-fat.o: fat.c headers/fat.h headers/includes.h
+fat.o: fat.c headers/fat.h headers/includes.h headers/command.h
 	${CC} -c -o $@ $<
 
 command.o: command.c headers/command.h headers/includes.h

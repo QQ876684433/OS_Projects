@@ -29,3 +29,8 @@ void READ_FAT_TABLES_ERROR()
     printf("failed to read FAT tables!\n");
     exit(1);
 }
+
+void LS_NO_SUCH_DIR()
+{
+    printf("no such directory!\n");
+}

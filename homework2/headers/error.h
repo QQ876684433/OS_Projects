@@ -13,4 +13,6 @@ void LOCATE_FAT_TABLES_ERROR();
 
 void READ_FAT_TABLES_ERROR();
 
+void LS_NO_SUCH_DIR();
+
 #endif

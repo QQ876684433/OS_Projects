@@ -38,11 +38,11 @@ int main(int argc, char const *argv[])
         {
             if (count == 1) // without parameters
             {
-                tree(fat12, &bs, LS_NO_PARAM);
+                tree(fat12, &bs, LS_NO_PARAM, "");
             }
             else
             {
-                tree(fat12, &bs, LS_WITH_PARAM);
+                tree(fat12, &bs, LS_WITH_PARAM, "");
             }
         }
     }

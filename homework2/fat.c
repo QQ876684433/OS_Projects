@@ -127,6 +127,135 @@ void showBootSectorInfo(struct BootSector *bs)
     printf("一个FAT占用扇区数:%d\n", bs->BS_SectorsPerFAT);
 }
 
+void getRootDirectories(FILE *fat12, struct BootSector *bootSector, char *directoryEntries[], int *logicalClusters, int *flags, int *entryNum)
+{
+    struct DirEntry dirEntry;
+    struct DirEntry *de_ptr = &dirEntry;
+    int base =
+        (bootSector->BS_NumberOfReservedSectors + bootSector->BS_NumberOfFATs * bootSector->BS_SectorsPerFAT) * bootSector->BS_BytesPerSector;
+
+    for (size_t i = 0; i < bootSector->BS_MaxNumOfRootDirectoryEntries; i++, base += 32)
+    {
+        mapDirEntry(fat12, de_ptr, base);
+
+        /*
+		 *	2. If the first byte of the Filename field is 0xE5, then the directory entry is free (i.e., currently
+		 * unused), and hence there is no file or subdirectory associated with the directory entry.
+		 *	3. If the first byte of the Filename field is 0x00, then this directory entry is free and all the
+		 * remaining directory entries in this directory are also free
+		 */
+        if (dirEntry.DE_Filename[0] == 0x00)
+        {
+            break;
+        }
+        else if (dirEntry.DE_Filename[0] == 0xE5)
+        {
+            continue;
+        }
+
+        // now current entry is in use
+        char *fileName = extractFileName(dirEntry.DE_Filename);
+
+        // skip hidden file or directories
+        if (isHidden(dirEntry.DE_Attributes))
+        {
+            continue;
+        }
+
+        if (isSubDirectory(dirEntry.DE_Attributes))
+        {
+            // SubDirectory
+            char *fullName = (char *)malloc(100);
+            memset(fullName, 0, 100);
+            fullName[0] = '/';
+            strcpy(fullName + 1, fileName);
+            directoryEntries[*entryNum] = fullName;
+            logicalClusters[*entryNum] = dirEntry.DE_FirstLogicalCluster;
+            flags[*entryNum] = ENTRY_DIRECTORY;
+        }
+        else
+        {
+            // file
+            directoryEntries[*entryNum] = fileName;
+            logicalClusters[*entryNum] = dirEntry.DE_FirstLogicalCluster;
+            flags[*entryNum] = ENTRY_FILE;
+        }
+        (*entryNum)++;
+    }
+}
+
+void getNonRootDirectories(FILE *fat12, struct BootSector *bootSector, int logicalCluster, char *dir, char *directoryEntries[], int *logicalClusters, int *flags, int *entryNum)
+{
+    int base = getPhysicalBase(logicalCluster, bootSector);
+
+    struct DirEntry dirEntry;
+    for (size_t i = 0; i < DIR_ENTRY_PER_SECTOR; i++, base += 32)
+    {
+        mapDirEntry(fat12, &dirEntry, base);
+
+        if (dirEntry.DE_Filename[0] == 0x00)
+        {
+            break;
+        }
+        else if (dirEntry.DE_Filename[0] == 0xE5)
+        {
+            continue;
+        }
+
+        // now DirEntry is in use
+        char *fileName = extractFileName(dirEntry.DE_Filename);
+
+        // skip hidden file or directories
+        if ((dirEntry.DE_Attributes & 0x02) != 0)
+        {
+            continue;
+        }
+
+        if ((dirEntry.DE_Attributes & 0x10) != 0)
+        {
+            // SubDirectory
+            if (strcmp(fileName, ".") != 0 && strcmp(fileName, "..") != 0)
+            {
+                directoryEntries[*entryNum] = fileName;
+                logicalClusters[*entryNum] = dirEntry.DE_FirstLogicalCluster;
+                flags[*entryNum] = ENTRY_DIRECTORY;
+            }
+            else
+            {
+                directoryEntries[*entryNum] = fileName;
+                flags[*entryNum] = ENTRY_DIR_SPECIAL;
+            }
+        }
+        else
+        {
+            // file
+            directoryEntries[*entryNum] = fileName;
+            logicalClusters[*entryNum] = dirEntry.DE_FirstLogicalCluster;
+            flags[*entryNum] = ENTRY_FILE;
+        }
+        (*entryNum)++;
+    }
+
+    // check if it's the last cluster
+    // if not, continue to scan the next cluster
+    /**
+     * Value            Meaning
+     * 0x00             Unused
+     * 0xFF0-0xFF6      Reserved cluster
+     * 0xFF7            Bad cluster
+     * 0xFF8-0xFFF      Last cluster in a file
+     * (anything else)  Number of the next cluster in the file
+     */
+    u16 nextLogicalClusterValue = getNextLogicalCluster(fat12, logicalCluster, bootSector);
+    if (nextLogicalClusterValue >= 0x0FF8 && nextLogicalClusterValue <= 0x0FFF)
+        return;
+    if (nextLogicalClusterValue > 0x001 && nextLogicalClusterValue < 0xFF0)
+    {
+        // ok, current cluster is not the last
+        getNonRootDirectories(fat12, bootSector, nextLogicalClusterValue, dir, directoryEntries, logicalClusters, flags, entryNum);
+    }
+}
+
 int isHidden(unsigned int attr)
 {
     return (attr & 0x02) != 0;
