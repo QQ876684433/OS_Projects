@@ -13,14 +13,12 @@ int main(int argc, char const *argv[])
     struct BootSector bs;
 
     loadBootSector(fat12, &bs);
-    showBootSectorInfo(&bs);
+    // showBootSectorInfo(&bs);
 
     while (1)
     {
         printf(">");
         char command[100];
-        // scanf("%s", command);
-        // gets(command);
         mygets(command, sizeof command);
 
         char *parts[100];

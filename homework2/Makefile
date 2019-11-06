@@ -19,15 +19,11 @@ command.o: command.c headers/command.h headers/includes.h
 main.o:	main.c headers/fat.h headers/error.h headers/command.h headers/includes.h
 	${CC} -c -o $@ $<
 
-fat12Driver: main.o my_print.o
-	# ${LD} -o $@ $? -lc --dynamic-linker /lib64/ld-linux-x86-64.so.2
-	${LD} -o $@ $?
-
-build: fat12Driver clean
-
-main.run: main.o fat.o error.o command.o
+main.run: main.o fat.o error.o command.o my_print.o
 	@${CC} -o $@ $?
 	@./$@
+
+build: main.run clean
 
 run: main.run clean
 

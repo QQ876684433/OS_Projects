@@ -129,7 +129,8 @@ int cat(FILE *fat12, struct BootSector *bootSector, int logicalCluster, int isPr
 
     // print the content read
     if (isPrint == LS_WITH_CAT)
-        printf("%s", buffer);
+        // printf("%s", buffer);
+        sprint(buffer);
     // calculate file size
     int size = 0;
     for (size_t i = 0; i < bootSector->BS_BytesPerSector; i++)
@@ -258,18 +259,25 @@ void lsPrint(FILE *fat12, struct BootSector *bootSector, int hasParam, char *dir
 {
     if (hasParam == LS_NO_PARAM)
     {
-        printf("%s/:\n", dir);
+        // printf("%s/:\n", dir);
+        sprint(dir);
+        sprint("/\n");
         for (size_t i = 0; i < entryNum; i++)
         {
             char *sp[224];
             int count = splits(directoryEntries[i], sp, '/');
             if (flags[i] == ENTRY_FILE)
             {
-                printf("%s  ", sp[count - 1]);
+                // printf("%s  ", sp[count - 1]);
+                sprint(sp[count - 1]);
+                sprint("  ");
             }
             else
             {
-                printf("\033[31m%s\033[0m  ", sp[count - 1]);
+                // printf("\033[31m%s\033[0m  ", sp[count - 1]);
+                sprint("\033[31m");
+                sprint(sp[count - 1]);
+                sprint("\033[0m  ");
             }
         }
     }
@@ -288,7 +296,16 @@ void lsPrint(FILE *fat12, struct BootSector *bootSector, int hasParam, char *dir
             }
         }
 
-        printf("%s/ %d %d:\n", strcmp(dir, "") == 0 ? "" : dir, dn, fn);
+        // printf("%s/ %d %d:\n", strcmp(dir, "") == 0 ? "" : dir, dn, fn);
+        char str[25];
+        sprint(strcmp(dir, "") == 0 ? "" : dir);
+        sprint("/ ");
+        sprintf(str, "%d", dn);
+        sprint(str);
+        sprintf(str, "%d", fn);
+        sprint(" ");
+        sprint(str);
+        sprint(":\n");
         for (size_t i = 0; i < entryNum; i++)
         {
             if (flags[i] == ENTRY_DIRECTORY)
@@ -299,21 +316,42 @@ void lsPrint(FILE *fat12, struct BootSector *bootSector, int hasParam, char *dir
                 countDirAndFile(fat12, bootSector, logClstr, flags, 0);
                 char *sp[224];
                 int count = splits(directoryEntries[i], sp, '/');
-                printf("\033[31m%s\033[0m  %d %d\n", sp[count - 1], dirNum, fileNum);
+
+                // printf("\033[31m%s\033[0m  %d %d\n", sp[count - 1], dirNum, fileNum);
+                char str[25];
+                sprint("\033[31m");
+                sprint(sp[count - 1]);
+                sprint("\033[0m  ");
+                sprintf(str, "%d", dirNum);
+                sprint(str);
+                sprintf(str, "%d", fileNum);
+                sprint("  ");
+                sprint(str);
+                sprint("\n");
             }
             else if (flags[i] == ENTRY_DIR_SPECIAL)
             {
-                printf("\033[31m%s\033[0m\n", directoryEntries[i]);
+                // printf("\033[31m%s\033[0m\n", directoryEntries[i]);
+                sprint("\033[31m");
+                sprint(directoryEntries[i]);
+                sprint("\033[0m\n");
             }
             else
             {
                 // get file size
                 int size = cat(fat12, bootSector, dirLogicalClusters[i], LS_WITHOUT_CAT);
-                printf("%s  %d\n", directoryEntries[i], size);
+                // printf("%s  %d\n", directoryEntries[i], size);
+                char str[25];
+                sprint(directoryEntries[i]);
+                sprint("  ");
+                sprintf(str, "%d", size);
+                sprint(str);
+                sprint("\n");
             }
         }
     }
-    printf("\n");
+    // printf("\n");
+    sprint("\n");
 }
 
 int isDirPrefixMatch(char *prefix, char *dir)
