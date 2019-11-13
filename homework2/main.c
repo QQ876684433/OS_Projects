@@ -3,7 +3,7 @@
 #include "headers/error.h"
 #include "headers/command.h"
 
-#define IMAGE "images/a.img"
+#define IMAGE "images/ref.img"
 
 char *mygets(char *buf, size_t size);
 

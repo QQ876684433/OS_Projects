@@ -261,7 +261,7 @@ void lsPrint(FILE *fat12, struct BootSector *bootSector, int hasParam, char *dir
     {
         // printf("%s/:\n", dir);
         sprint(dir);
-        sprint("/\n");
+        sprint("/:\n");
         for (size_t i = 0; i < entryNum; i++)
         {
             char *sp[224];
@@ -325,7 +325,7 @@ void lsPrint(FILE *fat12, struct BootSector *bootSector, int hasParam, char *dir
                 sprintf(str, "%d", dirNum);
                 sprint(str);
                 sprintf(str, "%d", fileNum);
-                sprint("  ");
+                sprint(" ");
                 sprint(str);
                 sprint("\n");
             }

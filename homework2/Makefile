@@ -1,8 +1,12 @@
-.PHONY: build clean run
+.PHONY: all build clean run
 
 AS = nasm
 CC = gcc
 LD = ld
+
+all: main.o fat.o error.o command.o my_print.o
+	@${CC} -o main $?
+	@-rm -f *.o
 
 my_print.o: my_print.asm
 	${AS} -f elf64 -o $@ $<
@@ -22,6 +26,9 @@ main.o:	main.c headers/fat.h headers/error.h headers/command.h headers/includes.
 main.run: main.o fat.o error.o command.o my_print.o
 	@${CC} -o $@ $?
 	@./$@
+
+pre.i: main.c fat.c error.c command.c headers/fat.h headers/error.h headers/command.h headers/includes.h
+	@${CC} -o $@ -E $<
 
 build: main.run clean
 
