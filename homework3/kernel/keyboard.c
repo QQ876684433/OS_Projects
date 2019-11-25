@@ -30,10 +30,6 @@ PRIVATE	int	num_lock;	/* Num Lock	 */
 PRIVATE	int	scroll_lock;	/* Scroll Lock	 */
 PRIVATE	int	column;
 
-PRIVATE int	caps_lock;	/* Caps Lock	 */
-PRIVATE int	num_lock;	/* Num Lock	 */
-PRIVATE int	scroll_lock;	/* Scroll Lock	 */
-
 PRIVATE u8	get_byte_from_kbuf();
 PRIVATE void    set_leds();
 PRIVATE void    kb_wait();

@@ -40,6 +40,11 @@ PUBLIC void init_screen(TTY* p_tty)
 	p_tty->p_console->original_addr      = nr_tty * con_v_mem_size;
 	p_tty->p_console->v_mem_limit        = con_v_mem_size;
 	p_tty->p_console->current_start_addr = p_tty->p_console->original_addr;
+	/* 初始化line变量，用来纪录每行最后个字符的位置，以方便删除时退格到上一行的正确位置 */
+	for (int i = 0; i < 1000; i++)
+	{
+		p_tty->p_console->lines[i] = 79;
+	}
 
 	/* 默认光标位置在最开始处 */
 	p_tty->p_console->cursor = p_tty->p_console->original_addr;
@@ -47,21 +52,46 @@ PUBLIC void init_screen(TTY* p_tty)
 	if (nr_tty == 0) {
 		/* 第一个控制台沿用原来的光标位置 */
 		p_tty->p_console->cursor = disp_pos / 2;
+		clear_screen(p_tty);
 		disp_pos = 0;
 	}
 	else {
 		out_char(p_tty->p_console, nr_tty + '0');
 		out_char(p_tty->p_console, '#');
+		set_cursor(p_tty->p_console->cursor);
 	}
-
-	set_cursor(p_tty->p_console->cursor);
 }
 
+/*======================================================================*
+			   clear_screen
+ *======================================================================*/
+PUBLIC void clear_screen(TTY *p_tty)
+{
+	// unsigned int disp = p_tty->p_console->cursor;
+	// while (disp--)
+	// {
+	// 	out_char(p_tty->p_console, '\b');
+	// }
+	u8 *p_vmem = (u8 *)(V_MEM_BASE + p_tty->p_console->original_addr * 2);
+	for (unsigned int i = 0; i < p_tty->p_console->v_mem_limit; i++)
+	{
+		*p_vmem++ = ' ';
+		*p_vmem++ = DEFAULT_CHAR_COLOR;
+	}
+
+	for (int i = 0; i < 1000; i++)
+	{
+		p_tty->p_console->lines[i] = 0;
+	}
+	
+	p_tty->p_console->cursor = p_tty->p_console->original_addr;
+	set_cursor(p_tty->p_console->cursor);
+}
 
 /*======================================================================*
 			   is_current_console
 *======================================================================*/
-PUBLIC int is_current_console(CONSOLE* p_con)
+PUBLIC int is_current_console(CONSOLE *p_con)
 {
 	return (p_con == &console_table[nr_current_console]);
 }
@@ -72,9 +102,31 @@ PUBLIC int is_current_console(CONSOLE* p_con)
  *======================================================================*/
 PUBLIC void out_char(CONSOLE* p_con, char ch)
 {
+	u8 OUTPUT_CHAR_COLOR = 
+		tty_table[nr_current_console].mode == 
+			MODE_NORMAL? DEFAULT_CHAR_COLOR : SEARCH_MODE_CHAR_COLOR;
+
 	u8* p_vmem = (u8*)(V_MEM_BASE + p_con->cursor * 2);
 
 	switch(ch) {
+	case '\t':
+		if (tty_table[nr_current_console].mode == MODE_MATCH)
+		{
+			break;
+		}
+		if (p_con->cursor < p_con->original_addr + p_con->v_mem_limit - 4)
+		{
+			for(unsigned int i = 0; i < 4; i++)
+			{
+				*p_vmem++ = 0;
+				*p_vmem++ = OUTPUT_CHAR_COLOR;
+				p_con->cursor++;
+			}
+			unsigned int line = p_con->cursor / 80;
+			unsigned int pos = p_con->cursor % 80;
+			p_con->lines[line] = pos;
+		}
+		break;
 	case '\n':
 		if (p_con->cursor < p_con->original_addr +
 		    p_con->v_mem_limit - SCREEN_WIDTH) {
@@ -84,18 +136,63 @@ PUBLIC void out_char(CONSOLE* p_con, char ch)
 		}
 		break;
 	case '\b':
+		if (tty_table[nr_current_console].mode == MODE_MATCH)
+		{
+			break;
+		}
 		if (p_con->cursor > p_con->original_addr) {
-			p_con->cursor--;
-			*(p_vmem-2) = ' ';
-			*(p_vmem-1) = DEFAULT_CHAR_COLOR;
+			// *******************************************************************
+			// 如果要删除的字符的ASCII码是0，说明遇到了tab，因此直接将光标回退4位即可
+			// 关键在于换行的处理
+			// *******************************************************************
+			unsigned int line = p_con->cursor / 80;
+			unsigned int pos = p_con->cursor % 80;
+			if (*(p_vmem-2) == 0) 
+			{
+				if (pos < 4)
+				{
+					line--;
+					p_con->cursor = line * 80 + p_con->lines[line];
+				}
+				else
+				{
+					p_con->cursor -= 4;
+					p_con->lines[line] = pos - 4;
+				}
+			}
+			else
+			{
+				if (pos == 0)
+				{
+					p_con->cursor = (line -1) * 80 + p_con->lines[line - 1];
+				}
+				else
+				{
+					p_con->cursor--;
+				}
+				*(p_vmem - 2) = ' ';
+				*(p_vmem - 1) = OUTPUT_CHAR_COLOR;
+
+				unsigned int line = p_con->cursor / 80;
+				unsigned int pos = p_con->cursor % 80;
+				p_con->lines[line] = pos;
+			}
 		}
 		break;
 	default:
+		if (tty_table[nr_current_console].mode == MODE_MATCH)
+		{
+			break;
+		}
 		if (p_con->cursor <
 		    p_con->original_addr + p_con->v_mem_limit - 1) {
 			*p_vmem++ = ch;
-			*p_vmem++ = DEFAULT_CHAR_COLOR;
+			*p_vmem++ = OUTPUT_CHAR_COLOR;
 			p_con->cursor++;
+
+			unsigned int line = p_con->cursor / 80;
+			unsigned int pos = p_con->cursor % 80;
+			p_con->lines[line] = pos;
 		}
 		break;
 	}

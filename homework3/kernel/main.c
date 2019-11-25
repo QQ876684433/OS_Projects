@@ -90,11 +90,14 @@ PUBLIC int kernel_main()
 	p_proc_ready	= proc_table;
 
 	init_clock();
-        init_keyboard();
+    init_keyboard();
 
 	restart();
 
-	while(1){}
+	while(1){
+		// milli_delay(2000);
+		// clear_screen(tty_table[nr_current_console]);
+	}
 }
 
 /*======================================================================*
@@ -104,7 +107,7 @@ void TestA()
 {
 	int i = 0;
 	while (1) {
-		printf("<Ticks:%x>", get_ticks());
+		// printf("<Ticks:%x>", get_ticks());
 		milli_delay(200);
 	}
 }
@@ -116,7 +119,7 @@ void TestB()
 {
 	int i = 0x1000;
 	while(1){
-		printf("B");
+		// printf("B");
 		milli_delay(200);
 	}
 }
@@ -128,7 +131,7 @@ void TestC()
 {
 	int i = 0x2000;
 	while(1){
-		printf("C");
+		// printf("C");
 		milli_delay(200);
 	}
 }
