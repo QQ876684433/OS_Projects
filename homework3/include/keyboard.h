@@ -47,6 +47,7 @@
 #define CTRL_R		(0x0B + FLAG_EXT)	/* R Ctrl	*/
 #define ALT_L		(0x0C + FLAG_EXT)	/* L Alt	*/
 #define ALT_R		(0x0D + FLAG_EXT)	/* R Alt	*/
+#define CTRL_Z		0					/* CTRL+Z	*/
 
 /* Lock keys */
 #define CAPS_LOCK	(0x0E + FLAG_EXT)	/* Caps Lock	*/

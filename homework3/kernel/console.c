@@ -102,13 +102,27 @@ PUBLIC int is_current_console(CONSOLE *p_con)
  *======================================================================*/
 PUBLIC void out_char(CONSOLE* p_con, char ch)
 {
+	/* 根据当前的tty模式获取文本颜色 */
 	u8 OUTPUT_CHAR_COLOR = 
 		tty_table[nr_current_console].mode == 
-			MODE_NORMAL? DEFAULT_CHAR_COLOR : SEARCH_MODE_CHAR_COLOR;
+			MODE_NORMAL ? DEFAULT_CHAR_COLOR : SEARCH_MODE_CHAR_COLOR;
 
 	u8* p_vmem = (u8*)(V_MEM_BASE + p_con->cursor * 2);
 
 	switch(ch) {
+	case CTRL_Z:
+		if (tty_table[nr_current_console].mode == MODE_MATCH)
+		{
+			break;
+		}
+		if (ctrlz_index > /* 匹配模式下的栈底指针是ctrlz_index_search_mode，普通模式下是0 */
+			(tty_table[nr_current_console].mode == MODE_SEARCH ? ctrlz_index_search_mode : 0))
+		{
+			is_ctrlz_op = 1;
+			out_char(p_con, ctrlz_stack[--ctrlz_index]);
+			is_ctrlz_op = 0;
+		}
+		break;
 	case '\t':
 		if (tty_table[nr_current_console].mode == MODE_MATCH)
 		{
@@ -126,6 +140,10 @@ PUBLIC void out_char(CONSOLE* p_con, char ch)
 			unsigned int pos = p_con->cursor % 80;
 			p_con->lines[line] = pos;
 		}
+		if (is_ctrlz_op != 1)
+		{
+			ctrlz_stack[ctrlz_index++] = '\b';
+		}
 		break;
 	case '\n':
 		if (p_con->cursor < p_con->original_addr +
@@ -134,12 +152,25 @@ PUBLIC void out_char(CONSOLE* p_con, char ch)
 				((p_con->cursor - p_con->original_addr) /
 				 SCREEN_WIDTH + 1);
 		}
+		if (is_ctrlz_op != 1)
+		{
+			ctrlz_stack[ctrlz_index++] = '\b';
+		}
 		break;
 	case '\b':
 		if (tty_table[nr_current_console].mode == MODE_MATCH)
 		{
 			break;
 		}
+		else if (tty_table[nr_current_console].mode == MODE_SEARCH)
+		{
+			/* 匹配模式不能删除之前输入的值 */
+			if (p_con->cursor <= pattern_start)
+			{
+				break;
+			}
+		}
+		
 		if (p_con->cursor > p_con->original_addr) {
 			// *******************************************************************
 			// 如果要删除的字符的ASCII码是0，说明遇到了tab，因此直接将光标回退4位即可
@@ -159,6 +190,12 @@ PUBLIC void out_char(CONSOLE* p_con, char ch)
 					p_con->cursor -= 4;
 					p_con->lines[line] = pos - 4;
 				}
+
+				// 删除tab的逆操作
+				if (is_ctrlz_op != 1)
+				{
+					ctrlz_stack[ctrlz_index++] = '\t';
+				}
 			}
 			else
 			{
@@ -170,6 +207,13 @@ PUBLIC void out_char(CONSOLE* p_con, char ch)
 				{
 					p_con->cursor--;
 				}
+
+				// 删除tab之外的字符的撤销
+				if (is_ctrlz_op != 1)
+				{
+					ctrlz_stack[ctrlz_index++] = *(p_vmem - 2);
+				}
+
 				*(p_vmem - 2) = ' ';
 				*(p_vmem - 1) = OUTPUT_CHAR_COLOR;
 
@@ -193,6 +237,10 @@ PUBLIC void out_char(CONSOLE* p_con, char ch)
 			unsigned int line = p_con->cursor / 80;
 			unsigned int pos = p_con->cursor % 80;
 			p_con->lines[line] = pos;
+		}
+		if (is_ctrlz_op != 1)
+		{
+			ctrlz_stack[ctrlz_index++] = '\b';
 		}
 		break;
 	}

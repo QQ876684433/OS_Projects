@@ -29,5 +29,9 @@ typedef struct s_tty
 } TTY;
 
 u32 pattern_start;
+int is_ctrlz_op;
+int ctrlz_index;
+int ctrlz_index_search_mode;
+u8 ctrlz_stack[100]; /* 撤销功能栈 */
 
 #endif /* _ORANGES_TTY_H_ */

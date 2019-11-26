@@ -56,6 +56,9 @@ PRIVATE void init_tty(TTY *p_tty)
 	p_tty->inbuf_count = 0;
 	p_tty->mode = MODE_NORMAL;
 	p_tty->p_inbuf_head = p_tty->p_inbuf_tail = p_tty->in_buf;
+	ctrlz_index = 0;
+	ctrlz_index_search_mode = 0;
+	is_ctrlz_op = 0;
 
 	init_screen(p_tty);
 }
@@ -67,7 +70,13 @@ PUBLIC void in_process(TTY *p_tty, u32 key)
 {
 	if (!(key & FLAG_EXT))
 	{
-		put_key(p_tty, key);
+		if (((key & MASK_RAW) == 'z') && ((key & FLAG_CTRL_L) || (key & FLAG_CTRL_R)))
+		{
+			put_key(p_tty, CTRL_Z);
+		} else
+		{
+			put_key(p_tty, key);
+		}
 	}
 	else
 	{
@@ -78,7 +87,8 @@ PUBLIC void in_process(TTY *p_tty, u32 key)
 			if (p_tty->mode == MODE_NORMAL)
 			{
 				start_search();
-			}else
+			}
+			else
 			{
 				end_search();
 			}
@@ -90,11 +100,13 @@ PUBLIC void in_process(TTY *p_tty, u32 key)
 			if (p_tty->mode == MODE_NORMAL)
 			{
 				put_key(p_tty, '\n');
-			}else if (p_tty->mode == MODE_SEARCH)
+			}
+			else if (p_tty->mode == MODE_SEARCH)
 			{
 				/* 开始匹配ESC模式下输入的查找串 */
 				start_match();
-			} else
+			}
+			else
 			{
 				// p_tty->mode == MODE_MATCH, do nothing
 			}
@@ -213,44 +225,48 @@ PUBLIC int sys_write(char *buf, int len, PROCESS *p_proc)
                               tty输入模式切换
 *======================================================================*/
 
-PUBLIC void start_search(){
+PUBLIC void start_search()
+{
 	TTY *p_tty = &tty_table[nr_current_console];
 	pattern_start = p_tty->p_console->cursor;
 
 	p_tty->mode = MODE_SEARCH;
+	ctrlz_index_search_mode = ctrlz_index;	/* 保存撤销栈在进入esc模式前的栈顶指针 */
 }
 
-PUBLIC void start_match(){
+PUBLIC void start_match()
+{
 	TTY *p_tty = &tty_table[nr_current_console];
 	// ----------------------------------------------------------------------------
 	// 								匹配字符串，Sunday算法
 	// ----------------------------------------------------------------------------
 	unsigned int index = 0;
-	unsigned int str_len = p_tty->p_console->cursor - p_tty->p_console->original_addr;	// 匹配串长度
-	unsigned int pat_len = p_tty->p_console->cursor - pattern_start;	// 模式串长度
-	u8 *pattern_vmem = (u8 *)(V_MEM_BASE + pattern_start * 2);	// 匹配串起始地址
-	u8 *str_vmem = (u8 *)(V_MEM_BASE + p_tty->p_console->original_addr * 2);	// 模式串起始地址
+	unsigned int str_len = p_tty->p_console->cursor - p_tty->p_console->original_addr; // 匹配串长度
+	unsigned int pat_len = p_tty->p_console->cursor - pattern_start;				   // 模式串长度
+	u8 *pattern_vmem = (u8 *)(V_MEM_BASE + pattern_start * 2);						   // 匹配串起始地址
+	u8 *str_vmem = (u8 *)(V_MEM_BASE + p_tty->p_console->original_addr * 2);		   // 模式串起始地址
 	while (index < str_len)
 	{
 		int is_found = 1;
 		for (unsigned int i = 0; i < pat_len; i++)
-		{ 
-			if (*(str_vmem + (index + i) * 2)!=*(pattern_vmem + i * 2))
+		{
+			if (*(str_vmem + (index + i) * 2) != *(pattern_vmem + i * 2))
 			{
 				is_found = 0;
 				break;
 			}
 		}
-		if (is_found == 1)	/* 匹配到字符串 */
+		if (is_found == 1) /* 匹配到字符串 */
 		{
 			unsigned int old_index = index;
 			index += pat_len;
 			while (old_index < index)
 			{
-				*(str_vmem + (old_index) * 2 + 1) = SEARCH_MODE_CHAR_COLOR;
+				*(str_vmem + (old_index)*2 + 1) = SEARCH_MODE_CHAR_COLOR;
 				old_index++;
 			}
-		}else
+		}
+		else
 		{
 			if (index + pat_len >= str_len)
 			{
@@ -283,9 +299,11 @@ PUBLIC void start_match(){
 	p_tty->mode = MODE_MATCH;
 }
 
-PUBLIC void end_search(){
+PUBLIC void end_search()
+{
 	TTY *p_tty = &tty_table[nr_current_console];
 	p_tty->mode = MODE_NORMAL;
+	
 	// 清除匹配字符串并恢复字符显示颜色
 	for (u32 ptr = p_tty->p_console->original_addr; ptr < p_tty->p_console->cursor; ptr++)
 	{
@@ -296,4 +314,7 @@ PUBLIC void end_search(){
 	{
 		out_char(p_tty->p_console, '\b');
 	}
+
+	/* 因为上面使用'\b'来清除匹配字符串，因此ctrlz_index会随之改变，因此在函数返回前需要将其恢复 */
+	ctrlz_index = ctrlz_index_search_mode;
 }
