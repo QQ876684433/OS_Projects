@@ -202,7 +202,8 @@ PUBLIC void out_char(CONSOLE* p_con, char ch)
 				int isNL = 0;	// 用来记录当前删除的是不是换行符
 				if (pos == 0)
 				{
-					isNL = 1;	// 说明当前删除的是换行
+					if(p_con->lines[line-1] != (SCREEN_WIDTH - 1))	// 如果条件成立，说明光标移到下一行是由于输入了\n；否则是因为输入普通字符到达了屏幕右边界后光标自动换到下一行
+						isNL = 1;	// 说明当前删除的是换行
 					p_con->cursor = (line -1) * 80 + p_con->lines[line - 1];
 				}
 				else
