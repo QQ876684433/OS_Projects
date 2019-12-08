@@ -199,8 +199,10 @@ PUBLIC void out_char(CONSOLE* p_con, char ch)
 			}
 			else
 			{
+				int isNL = 0;	// 用来记录当前删除的是不是换行符
 				if (pos == 0)
 				{
+					isNL = 1;	// 说明当前删除的是换行
 					p_con->cursor = (line -1) * 80 + p_con->lines[line - 1];
 				}
 				else
@@ -211,7 +213,7 @@ PUBLIC void out_char(CONSOLE* p_con, char ch)
 				// 删除tab之外的字符的撤销
 				if (is_ctrlz_op != 1)
 				{
-					ctrlz_stack[ctrlz_index++] = *(p_vmem - 2);
+					ctrlz_stack[ctrlz_index++] = isNL ? '\n' : *(p_vmem - 2);
 				}
 
 				*(p_vmem - 2) = ' ';
