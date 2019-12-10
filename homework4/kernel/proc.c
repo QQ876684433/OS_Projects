@@ -78,10 +78,6 @@ PUBLIC void sys_milli_seconds(int ms)
 {
 	p_proc_ready->delay = ms + ticks;
 	p_proc_ready->ticks = 0;
-	// p_proc_ready++;
-	// if (p_proc_ready >= proc_table + NR_TASKS)
-	// {
-	// 	p_proc_ready = proc_table;
-	// }
+	// 需要立即重新调度
 	schedule();
 }
