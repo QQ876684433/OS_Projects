@@ -36,6 +36,7 @@ typedef struct s_proc {
 
         int ticks;                 /* remained ticks */
         int priority;
+		int delay;				/* 用作milli_seconds使用，为0时则不需要延迟 */
 
 	u32 pid;                   /* process id passed in from MM */
 	char p_name[16];           /* name of the process */

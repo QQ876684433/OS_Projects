@@ -46,7 +46,7 @@
 			     * Counter0 - LSB then MSB - rate generator - binary
 			     */
 #define TIMER_FREQ     1193182L/* clock frequency for timer in PC and AT */
-#define HZ             100  /* clock freq (software settable on IBM-PC) */
+#define HZ             200  /* clock freq (software settable on IBM-PC) */
 
 /* Hardware interrupts */
 #define	NR_IRQ		16	/* Number of IRQs */
@@ -62,6 +62,6 @@
 #define	AT_WINI_IRQ	14	/* at winchester */
 
 /* system call */
-#define NR_SYS_CALL     2
+#define NR_SYS_CALL     3
 
 #endif /* _ORANGES_CONST_H_ */
