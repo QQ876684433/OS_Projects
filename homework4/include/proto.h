@@ -9,6 +9,7 @@
 PUBLIC void	out_byte(u16 port, u8 value);
 PUBLIC u8	in_byte(u16 port);
 PUBLIC void	disp_str(char * info);
+PUBLIC void write(char *buf);
 PUBLIC void	disp_color_str(char * info, int color);
 
 /* protect.c */
@@ -38,8 +39,10 @@ PUBLIC void clock_handler(int irq);
 
 /* proc.c */
 PUBLIC  int     sys_get_ticks();        /* sys_call */
+PUBLIC  void    sys_sprint(char* buf);
 
 /* syscall.asm */
 PUBLIC  void    sys_call();             /* int_handler */
 PUBLIC  int     get_ticks();
+PUBLIC  void    sprint(char* buf);
 
