@@ -87,6 +87,7 @@ PUBLIC int kernel_main()
 	// 初始化信号量
 	s.value = 1;
 	s.list = NULL;
+	variable = 0;
 
 	restart();
 
@@ -108,9 +109,15 @@ void ProcessA()
 
 	while (1)
 	{
-		P(&s);
+		// P(&s);
+		B_P(&s);
+		int v = variable;
+		v++;
+		milli_seconds(100);
+		variable = v;
 		sprint("A.");
-		// milli_seconds(1000);
+		disp_int(variable);
+		B_V(&s);
 	}
 }
 
@@ -119,9 +126,15 @@ void ProcessB()
 	int i = 0x1000;
 	while (1)
 	{
-		P(&s);
+		// P(&s);
+		B_P(&s);
+		int v = variable;
+		v++;
+		milli_seconds(100);
+		variable = v;
 		sprint("B.");
-		// milli_seconds(1000);
+		disp_int(variable);
+		B_V(&s);
 	}
 }
 
@@ -130,9 +143,15 @@ void ProcessC()
 	int i = 0x2000;
 	while (1)
 	{
-		milli_seconds(1000);
-		V(&s);
+		// V(&s);
+		B_P(&s);
+		int v = variable;
+		v++;
+		milli_seconds(100);
+		variable = v;
 		sprint("C.");
+		disp_int(variable);
+		B_V(&s);
 	}
 }
 
@@ -141,9 +160,15 @@ void ProcessD()
 	int i = 0x1000;
 	while (1)
 	{
-		P(&s);
+		// P(&s);
+		B_P(&s);
+		int v = variable;
+		v++;
+		milli_seconds(100);
+		variable = v;
 		sprint("D.");
-		// milli_seconds(1000);
+		disp_int(variable);
+		B_V(&s);
 	}
 }
 
@@ -152,9 +177,15 @@ void ProcessE()
 	int i = 0x1000;
 	while (1)
 	{
-		P(&s);
+		// P(&s);
+		B_P(&s);
+		int v = variable;
+		v++;
+		milli_seconds(100);
+		variable = v;
 		sprint("E.");
-		// milli_seconds(1000);
+		disp_int(variable);
+		B_V(&s);
 	}
 }
 
@@ -163,9 +194,15 @@ void ProcessF()
 	int i = 0x1000;
 	while (1)
 	{
-		P(&s);
+		// P(&s);
+		B_P(&s);
+		int v = variable;
+		v++;
+		milli_seconds(100);
+		variable = v;
 		sprint("F.");
-		// milli_seconds(1000);
+		disp_int(variable);
+		B_V(&s);
 	}
 }
 

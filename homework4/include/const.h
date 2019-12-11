@@ -63,7 +63,7 @@
 #define	AT_WINI_IRQ	14	/* at winchester */
 
 /* system call */
-#define NR_SYS_CALL     5
+#define NR_SYS_CALL     7
 
 /* 进程状态 */
 #define STATE_SLEEP 0   /* 等待态 */

@@ -29,4 +29,5 @@ extern	char		task_stack[];
 extern  TASK            task_table[];
 extern	irq_handler	irq_table[];
 
-EXTERN PUBLIC SEMAPHORE s;
+EXTERN SEMAPHORE s;
+EXTERN int variable; 

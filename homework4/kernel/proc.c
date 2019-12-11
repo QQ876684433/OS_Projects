@@ -87,7 +87,7 @@ PUBLIC void sys_milli_seconds(int ms)
 /*======================================================================*
                         	sys_P
  *======================================================================*/
-PUBLIC void	sys_P(SEMAPHORE *s)
+PUBLIC void sys_P(SEMAPHORE *s)
 {
 	s->value--;
 	if (s->value < 0)
@@ -103,6 +103,37 @@ PUBLIC void sys_V(SEMAPHORE *s)
 {
 	s->value++;
 	if (s->value <= 0)
+	{
+		wakeup(s);
+	}
+}
+
+/*======================================================================*
+                        	sys_BP
+ *======================================================================*/
+PUBLIC void sys_BP(SEMAPHORE *s)
+{
+	if (s->value == 1)
+	{
+		s->value = 0;
+	}
+	else
+	{
+		sleep(s);
+	}
+}
+
+/*======================================================================*
+                        	sys_BV
+ *======================================================================*/
+PUBLIC void sys_BV(SEMAPHORE *s)
+{
+	if (s->list == NULL)
+	{
+		// list is empty
+		s->value = 1;
+	}
+	else
 	{
 		wakeup(s);
 	}

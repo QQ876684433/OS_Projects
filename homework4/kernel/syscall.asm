@@ -12,6 +12,8 @@ _NR_sprint			equ	1
 _NR_milli_seconds	equ	2
 _NR_P				equ	3
 _NR_V				equ	4
+_NR_BP				equ	5
+_NR_BV				equ	6
 INT_VECTOR_SYS_CALL equ 0x90
 
 ; 导出符号
@@ -20,6 +22,8 @@ global	sprint
 global	milli_seconds
 global	P
 global	V
+global	B_P
+global	B_V
 
 bits 32
 [section .text]
@@ -65,6 +69,24 @@ P:
 ; ====================================================================
 V:
 	mov	eax, _NR_V
+	mov	ecx, [esp + 4]
+	int	INT_VECTOR_SYS_CALL
+	ret
+
+; ====================================================================
+;                              		BP
+; ====================================================================
+B_P:
+	mov	eax, _NR_BP
+	mov	ecx, [esp + 4]
+	int	INT_VECTOR_SYS_CALL
+	ret
+
+; ====================================================================
+;                              		BV
+; ====================================================================
+B_V:
+	mov	eax, _NR_BV
 	mov	ecx, [esp + 4]
 	int	INT_VECTOR_SYS_CALL
 	ret
