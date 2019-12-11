@@ -27,9 +27,12 @@ PUBLIC void delay(int time);
 void restart();
 
 /* main.c */
-void TestA();
-void TestB();
-void TestC();
+void ProcessA();
+void ProcessB();
+void ProcessC();
+void ProcessD();
+void ProcessE();
+void ProcessF();
 
 /* i8259.c */
 PUBLIC void put_irq_handler(int irq, irq_handler handler);

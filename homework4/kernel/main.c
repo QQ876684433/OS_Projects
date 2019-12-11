@@ -65,6 +65,9 @@ PUBLIC int kernel_main()
 	proc_table[0].ticks = proc_table[0].priority = 15;
 	proc_table[1].ticks = proc_table[1].priority = 5;
 	proc_table[2].ticks = proc_table[2].priority = 3;
+	proc_table[3].ticks = proc_table[3].priority = 3;
+	proc_table[4].ticks = proc_table[4].priority = 3;
+	proc_table[5].ticks = proc_table[5].priority = 3;
 
 	k_reenter = 0;
 	ticks = 0;
@@ -93,9 +96,10 @@ PUBLIC int kernel_main()
 }
 
 /*======================================================================*
-                               TestA
+                               进程列表
  *======================================================================*/
-void TestA()
+
+void ProcessA()
 {
 	int i = 0;
 	// SEMAPHORE s;
@@ -110,10 +114,7 @@ void TestA()
 	}
 }
 
-/*======================================================================*
-                               TestB
- *======================================================================*/
-void TestB()
+void ProcessB()
 {
 	int i = 0x1000;
 	while (1)
@@ -124,16 +125,48 @@ void TestB()
 	}
 }
 
-/*======================================================================*
-                               TestC
- *======================================================================*/
-void TestC()
+void ProcessC()
 {
 	int i = 0x2000;
 	while (1)
 	{
-		// sprint("C.");
 		milli_seconds(1000);
 		V(&s);
+		sprint("C.");
 	}
 }
+
+void ProcessD()
+{
+	int i = 0x1000;
+	while (1)
+	{
+		P(&s);
+		sprint("D.");
+		// milli_seconds(1000);
+	}
+}
+
+void ProcessE()
+{
+	int i = 0x1000;
+	while (1)
+	{
+		P(&s);
+		sprint("E.");
+		// milli_seconds(1000);
+	}
+}
+
+void ProcessF()
+{
+	int i = 0x1000;
+	while (1)
+	{
+		P(&s);
+		sprint("F.");
+		// milli_seconds(1000);
+	}
+}
+
+

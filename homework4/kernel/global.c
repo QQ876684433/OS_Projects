@@ -14,15 +14,17 @@
 #include "proc.h"
 #include "global.h"
 
+PUBLIC PROCESS proc_table[NR_TASKS];
 
-PUBLIC	PROCESS			proc_table[NR_TASKS];
+PUBLIC char task_stack[STACK_SIZE_TOTAL];
 
-PUBLIC	char			task_stack[STACK_SIZE_TOTAL];
+PUBLIC TASK task_table[NR_TASKS] = {{ProcessA, STACK_SIZE_PROCESSA, "ProcessA"},
+                                    {ProcessB, STACK_SIZE_PROCESSB, "ProcessB"},
+                                    {ProcessC, STACK_SIZE_PROCESSC, "ProcessC"},
+                                    {ProcessD, STACK_SIZE_PROCESSD, "ProcessD"},
+                                    {ProcessE, STACK_SIZE_PROCESSE, "ProcessE"},
+                                    {ProcessF, STACK_SIZE_PROCESSF, "ProcessF"}};
 
-PUBLIC	TASK	task_table[NR_TASKS] = {{TestA, STACK_SIZE_TESTA, "TestA"},
-					{TestB, STACK_SIZE_TESTB, "TestB"},
-					{TestC, STACK_SIZE_TESTC, "TestC"}};
-
-PUBLIC	irq_handler		irq_table[NR_IRQ];
+PUBLIC irq_handler irq_table[NR_IRQ];
 
 PUBLIC system_call sys_call_table[NR_SYS_CALL] = {sys_get_ticks, sys_sprint, sys_milli_seconds, sys_P, sys_V};
