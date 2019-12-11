@@ -5,6 +5,12 @@
                                                     Forrest Yu, 2005
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
+#ifndef _PROC_H_
+#define _PROC_H_
+
+#include "const.h"
+#include "type.h"
+#include "protect.h"
 
 typedef struct s_stackframe {	/* proc_ptr points here				↑ Low			*/
 	u32	gs;		/* ┓						│			*/
@@ -37,7 +43,8 @@ typedef struct s_proc {
         int ticks;                 /* remained ticks */
         int priority;
 		int delay;				/* 用作milli_seconds使用，为0时则不需要延迟 */
-
+		int state;				/* 进程的状态：等待态、非等待态 */
+		struct s_proc *next;
 	u32 pid;                   /* process id passed in from MM */
 	char p_name[16];           /* name of the process */
 }PROCESS;
@@ -61,3 +68,4 @@ typedef struct s_task {
 				STACK_SIZE_TESTB + \
 				STACK_SIZE_TESTC)
 
+#endif

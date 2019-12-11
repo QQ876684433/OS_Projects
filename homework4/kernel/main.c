@@ -51,6 +51,10 @@ PUBLIC int kernel_main()
 
 		// 初始化delay
 		p_proc->delay = 0;
+		// 初始化PCB链表的next指针
+		p_proc->next = NULL;
+		// 初始化进程状态为非等待态
+		p_proc->state = STATE_READY;
 
 		p_task_stack -= p_task->stacksize;
 		p_proc++;
@@ -77,6 +81,10 @@ PUBLIC int kernel_main()
 
 	disp_pos = 0;
 
+	// 初始化信号量
+	s.value = 1;
+	s.list = NULL;
+
 	restart();
 
 	while (1)
@@ -90,10 +98,15 @@ PUBLIC int kernel_main()
 void TestA()
 {
 	int i = 0;
+	// SEMAPHORE s;
+	// s.value = 0;
+	// s.list = NULL;
+
 	while (1)
 	{
+		P(&s);
 		sprint("A.");
-		milli_seconds(1000);
+		// milli_seconds(1000);
 	}
 }
 
@@ -105,8 +118,9 @@ void TestB()
 	int i = 0x1000;
 	while (1)
 	{
+		P(&s);
 		sprint("B.");
-		milli_seconds(1000);
+		// milli_seconds(1000);
 	}
 }
 
@@ -118,7 +132,8 @@ void TestC()
 	int i = 0x2000;
 	while (1)
 	{
-		sprint("C.");
-		milli_seconds(200);
+		// sprint("C.");
+		milli_seconds(1000);
+		V(&s);
 	}
 }

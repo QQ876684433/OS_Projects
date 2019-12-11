@@ -12,6 +12,7 @@
 #include "string.h"
 #include "proc.h"
 #include "global.h"
+#include "../include/semaphore.h"
 
 /*======================================================================*
                               schedule
@@ -36,9 +37,10 @@ PUBLIC void schedule()
 		{
 			for (p = proc_table; p < proc_table + NR_TASKS; p++)
 			{
-				if (p->delay <= ticks)
+				if (p->delay <= ticks && p->state == STATE_READY)
 				{
-					// 说明当前的进程p已经不在delay中了，为其分配ticks
+					// 说明当前的进程p已经不在delay中了，并且状态为非等待态，
+					// 为其分配ticks
 					p->ticks = p->priority;
 				}
 				else
@@ -80,4 +82,28 @@ PUBLIC void sys_milli_seconds(int ms)
 	p_proc_ready->ticks = 0;
 	// 需要立即重新调度
 	schedule();
+}
+
+/*======================================================================*
+                        	sys_P
+ *======================================================================*/
+PUBLIC void	sys_P(SEMAPHORE *s)
+{
+	s->value--;
+	if (s->value < 0)
+	{
+		sleep(s);
+	}
+}
+
+/*======================================================================*
+                        	sys_V
+ *======================================================================*/
+PUBLIC void sys_V(SEMAPHORE *s)
+{
+	s->value++;
+	if (s->value <= 0)
+	{
+		wakeup(s);
+	}
 }

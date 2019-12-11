@@ -5,6 +5,11 @@
                                                     Forrest Yu, 2005
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
+#ifndef _PROTO_H_
+#define _PROTO_H_
+
+#include "./semaphore.h"
+
 /* klib.asm */
 PUBLIC void out_byte(u16 port, u8 value);
 PUBLIC u8 in_byte(u16 port);
@@ -39,9 +44,15 @@ PUBLIC void clock_handler(int irq);
 PUBLIC int sys_get_ticks(); /* sys_call */
 PUBLIC void sys_sprint(char *buf);
 PUBLIC void sys_milli_seconds(int ms);
+PUBLIC void sys_P(SEMAPHORE *s);
+PUBLIC void sys_V(SEMAPHORE *s);
 
 /* syscall.asm */
 PUBLIC void sys_call(); /* int_handler */
 PUBLIC int get_ticks();
 PUBLIC void sprint(char *buf);
 PUBLIC void milli_seconds(int ms);
+PUBLIC void P(SEMAPHORE *s);
+PUBLIC void V(SEMAPHORE *s);
+
+#endif

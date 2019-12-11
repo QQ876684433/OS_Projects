@@ -340,16 +340,21 @@ save:
 ; ====================================================================================
 sys_call:
         call    save
-		
+		; push	eax
+		; cmp	eax, 3
+		; jnb	.1
         sti
-
+.1:
 		push	ecx
         call    [sys_call_table + eax * 4]
 		pop 	ecx
         mov     [esi + EAXREG - P_STACKBASE], eax
 
+		; pop	eax
+		; cmp	eax, 3
+		; jnb	.2
         cli
-
+.2:
         ret
 
 

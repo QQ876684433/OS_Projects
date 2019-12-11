@@ -8,6 +8,7 @@
 #ifndef	_ORANGES_CONST_H_
 #define	_ORANGES_CONST_H_
 
+#define NULL    ((void *)0)
 
 /* EXTERN */
 #define	EXTERN	extern	/* EXTERN is defined as extern except in global.c */
@@ -62,6 +63,10 @@
 #define	AT_WINI_IRQ	14	/* at winchester */
 
 /* system call */
-#define NR_SYS_CALL     3
+#define NR_SYS_CALL     5
+
+/* 进程状态 */
+#define STATE_SLEEP 0   /* 等待态 */
+#define STATE_READY 1   /* 非等待态 */
 
 #endif /* _ORANGES_CONST_H_ */
