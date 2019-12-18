@@ -62,12 +62,12 @@ PUBLIC int kernel_main()
 		selector_ldt += 1 << 3;
 	}
 
-	proc_table[0].ticks = proc_table[0].priority = 1;
-	proc_table[1].ticks = proc_table[1].priority = 1;
-	proc_table[2].ticks = proc_table[2].priority = 1;
-	proc_table[3].ticks = proc_table[3].priority = 1;
-	proc_table[4].ticks = proc_table[4].priority = 1;
-	proc_table[5].ticks = proc_table[5].priority = 1;
+	proc_table[0].ticks = proc_table[0].priority = 2;
+	proc_table[1].ticks = proc_table[1].priority = 2;
+	proc_table[2].ticks = proc_table[2].priority = 2;
+	proc_table[3].ticks = proc_table[3].priority = 2;
+	proc_table[4].ticks = proc_table[4].priority = 2;
+	proc_table[5].ticks = proc_table[5].priority = 2;
 
 	k_reenter = 0;
 	ticks = 0;
@@ -99,9 +99,11 @@ PUBLIC int kernel_main()
 	writeblock.value = 1;
 	mutex.value = 1;
 	books.value = 3;
+	s.value = 1;
 	writeblock.list = NULL;
 	mutex.list = NULL;
 	books.list = NULL;
+	s.list = NULL;
 	time_slice = 1000;
 	writerNum = 0; // 当前写者数为0
 	readerNum = 0; // 当前读者数为0

@@ -10,6 +10,7 @@
 #define _reader_first_with_writer_hungry    // 读者优先，不解决写者饥饿问题
 #define _reader_first_without_writer_hungry // 读者优先，通过每次读者读完即 \
 											// milli_seconds(一个时间片)来解决写者饥饿
+#define _writer_first                       // 写者优先
 
 /*===================================================================================*
 									题目要求
@@ -46,6 +47,9 @@ void ProcessA()
     int color = 1;
     while (1)
     {
+#ifdef _writer_first
+        B_P(&s);
+#endif
         P(&books);
         B_P(&mutex);
         readcount++;
@@ -56,6 +60,9 @@ void ProcessA()
         readerNum++;
         disp_color_str(start, color);
         B_V(&mutex);
+#ifdef _writer_first
+        B_V(&s);
+#endif
 
         // 读文件
         disp_color_str(reading, color);
@@ -88,6 +95,9 @@ void ProcessB()
     int color = 2;
     while (1)
     {
+#ifdef _writer_first
+        B_P(&s);
+#endif
         P(&books);
         B_P(&mutex);
         readcount++;
@@ -98,6 +108,9 @@ void ProcessB()
         readerNum++;
         disp_color_str(start, color);
         B_V(&mutex);
+#ifdef _writer_first
+        B_V(&s);
+#endif
 
         // 读文件
         disp_color_str(reading, color);
@@ -130,6 +143,9 @@ void ProcessC()
     int color = 3;
     while (1)
     {
+#ifdef _writer_first
+        B_P(&s);
+#endif
         P(&books);
         B_P(&mutex);
         readcount++;
@@ -140,6 +156,9 @@ void ProcessC()
         readerNum++;
         disp_color_str(start, color);
         B_V(&mutex);
+#ifdef _writer_first
+        B_V(&s);
+#endif
 
         // 读文件
         disp_color_str(reading, color);
@@ -172,6 +191,9 @@ void ProcessD()
     int color = 4;
     while (1)
     {
+#ifdef _writer_first
+        B_P(&s);
+#endif
         B_P(&writeblock);
         writerNum++;
         disp_color_str(start, color);
@@ -183,6 +205,9 @@ void ProcessD()
         disp_color_str(end, color);
         writerNum--;
         B_V(&writeblock);
+#ifdef _writer_first
+        B_V(&s);
+#endif
     }
 }
 
@@ -195,6 +220,9 @@ void ProcessE()
     int color = 5;
     while (1)
     {
+#ifdef _writer_first
+        B_P(&s);
+#endif
         B_P(&writeblock);
         writerNum++;
         disp_color_str(start, color);
@@ -206,6 +234,9 @@ void ProcessE()
         disp_color_str(end, color);
         writerNum--;
         B_V(&writeblock);
+#ifdef _writer_first
+        B_V(&s);
+#endif
     }
 }
 
