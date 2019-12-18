@@ -26,6 +26,7 @@ ORANGESBOOT	= boot/boot.bin boot/loader.bin
 ORANGESKERNEL	= kernel.bin
 OBJS		= kernel/kernel.o kernel/syscall.o kernel/start.o kernel/main.o kernel/clock.o\
 			kernel/i8259.o kernel/global.o kernel/protect.o kernel/proc.o kernel/semaphore.o\
+			kernel/process.o\
 			lib/kliba.o lib/klib.o lib/string.o
 DASMOUTPUT	= kernel.bin.asm
 
@@ -105,6 +106,9 @@ kernel/proc.o: kernel/proc.c include/semaphore.h
 	$(CC) $(CFLAGS) -o $@ $<
 
 kernel/semaphore.o: kernel/semaphore.c include/semaphore.h include/const.h include/proc.h
+	$(CC) $(CFLAGS) -o $@ $<
+
+kernel/process.o: kernel/process.c
 	$(CC) $(CFLAGS) -o $@ $<
 
 lib/klib.o: lib/klib.c include/type.h include/const.h include/protect.h include/string.h include/proc.h include/proto.h \

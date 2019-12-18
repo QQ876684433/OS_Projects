@@ -66,11 +66,16 @@ PUBLIC int sys_get_ticks()
  *======================================================================*/
 PUBLIC void sys_sprint(char *buf)
 {
-	disp_str(buf);
-	if (disp_pos >= 160 * 25)
+	if (disp_pos / 160 >= 30)
 	{
 		disp_pos = 0;
+		for (int i = 0; i < 80 * 25; i++)
+		{
+			disp_str(" ");
+		}
+		disp_pos = 0;
 	}
+	disp_str(buf);
 }
 
 /*======================================================================*

@@ -18,7 +18,7 @@
  *======================================================================*/
 PUBLIC int kernel_main()
 {
-	disp_str("-----\"kernel_main\" begins-----\n");
+	// disp_str("-----\"kernel_main\" begins-----\n");
 
 	TASK *p_task = task_table;
 	PROCESS *p_proc = proc_table;
@@ -62,12 +62,12 @@ PUBLIC int kernel_main()
 		selector_ldt += 1 << 3;
 	}
 
-	proc_table[0].ticks = proc_table[0].priority = 15;
-	proc_table[1].ticks = proc_table[1].priority = 5;
-	proc_table[2].ticks = proc_table[2].priority = 3;
-	proc_table[3].ticks = proc_table[3].priority = 3;
-	proc_table[4].ticks = proc_table[4].priority = 3;
-	proc_table[5].ticks = proc_table[5].priority = 3;
+	proc_table[0].ticks = proc_table[0].priority = 1;
+	proc_table[1].ticks = proc_table[1].priority = 1;
+	proc_table[2].ticks = proc_table[2].priority = 1;
+	proc_table[3].ticks = proc_table[3].priority = 1;
+	proc_table[4].ticks = proc_table[4].priority = 1;
+	proc_table[5].ticks = proc_table[5].priority = 1;
 
 	k_reenter = 0;
 	ticks = 0;
@@ -83,11 +83,26 @@ PUBLIC int kernel_main()
 	enable_irq(CLOCK_IRQ);					   /* 让8259A可以接收时钟中断 */
 
 	disp_pos = 0;
+	for (int i = 0; i < 25 * 80; i++)
+	{
+		disp_str(" ");
+	}
+	disp_pos = 0;
 
 	// 初始化信号量
 	s.value = 1;
 	s.list = NULL;
 	variable = 0;
+
+	// 读者-写者问题相关数据初始化
+	readcount = 0;
+	writeblock.value = 1;
+	mutex.value = 1;
+	writeblock.list = NULL;
+	mutex.list = NULL;
+	time_slice = 1000;
+	writerNum = 0; // 当前写者数为0
+	readerNum = 0; // 当前读者数为0
 
 	restart();
 
@@ -95,115 +110,4 @@ PUBLIC int kernel_main()
 	{
 	}
 }
-
-/*======================================================================*
-                               进程列表
- *======================================================================*/
-
-void ProcessA()
-{
-	int i = 0;
-	// SEMAPHORE s;
-	// s.value = 0;
-	// s.list = NULL;
-
-	while (1)
-	{
-		// P(&s);
-		B_P(&s);
-		int v = variable;
-		v++;
-		milli_seconds(100);
-		variable = v;
-		sprint("A.");
-		disp_int(variable);
-		B_V(&s);
-	}
-}
-
-void ProcessB()
-{
-	int i = 0x1000;
-	while (1)
-	{
-		// P(&s);
-		B_P(&s);
-		int v = variable;
-		v++;
-		milli_seconds(100);
-		variable = v;
-		sprint("B.");
-		disp_int(variable);
-		B_V(&s);
-	}
-}
-
-void ProcessC()
-{
-	int i = 0x2000;
-	while (1)
-	{
-		// V(&s);
-		B_P(&s);
-		int v = variable;
-		v++;
-		milli_seconds(100);
-		variable = v;
-		sprint("C.");
-		disp_int(variable);
-		B_V(&s);
-	}
-}
-
-void ProcessD()
-{
-	int i = 0x1000;
-	while (1)
-	{
-		// P(&s);
-		B_P(&s);
-		int v = variable;
-		v++;
-		milli_seconds(100);
-		variable = v;
-		sprint("D.");
-		disp_int(variable);
-		B_V(&s);
-	}
-}
-
-void ProcessE()
-{
-	int i = 0x1000;
-	while (1)
-	{
-		// P(&s);
-		B_P(&s);
-		int v = variable;
-		v++;
-		milli_seconds(100);
-		variable = v;
-		sprint("E.");
-		disp_int(variable);
-		B_V(&s);
-	}
-}
-
-void ProcessF()
-{
-	int i = 0x1000;
-	while (1)
-	{
-		// P(&s);
-		B_P(&s);
-		int v = variable;
-		v++;
-		milli_seconds(100);
-		variable = v;
-		sprint("F.");
-		disp_int(variable);
-		B_V(&s);
-	}
-}
-
 

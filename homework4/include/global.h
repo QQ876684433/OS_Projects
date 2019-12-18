@@ -31,3 +31,12 @@ extern	irq_handler	irq_table[];
 
 EXTERN SEMAPHORE s;
 EXTERN int variable; 
+
+/**
+ * 读者-写者问题信号量定义 
+ */
+EXTERN int readcount;   // 读进程计数
+EXTERN SEMAPHORE writeblock, mutex;
+EXTERN int time_slice;  // 时间片长度
+EXTERN int writerNum;   // 记录当前写者数量
+EXTERN int readerNum;   // 记录同时在读的读者数量
