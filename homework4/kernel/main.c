@@ -98,8 +98,10 @@ PUBLIC int kernel_main()
 	readcount = 0;
 	writeblock.value = 1;
 	mutex.value = 1;
+	books.value = 3;
 	writeblock.list = NULL;
 	mutex.list = NULL;
+	books.list = NULL;
 	time_slice = 1000;
 	writerNum = 0; // 当前写者数为0
 	readerNum = 0; // 当前读者数为0

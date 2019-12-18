@@ -46,6 +46,7 @@ void ProcessA()
     int color = 1;
     while (1)
     {
+        P(&books);
         B_P(&mutex);
         readcount++;
         if (readcount == 1)
@@ -73,6 +74,8 @@ void ProcessA()
 #ifdef _reader_first_without_writer_hungry
         milli_seconds(1000);
 #endif
+        // 延时后再唤醒等待队列的读进程（即V操作）
+        V(&books);
     }
 }
 
@@ -85,6 +88,7 @@ void ProcessB()
     int color = 2;
     while (1)
     {
+        P(&books);
         B_P(&mutex);
         readcount++;
         if (readcount == 1)
@@ -112,6 +116,8 @@ void ProcessB()
 #ifdef _reader_first_without_writer_hungry
         milli_seconds(1000);
 #endif
+
+        V(&books);
     }
 }
 
@@ -124,6 +130,7 @@ void ProcessC()
     int color = 3;
     while (1)
     {
+        P(&books);
         B_P(&mutex);
         readcount++;
         if (readcount == 1)
@@ -151,6 +158,8 @@ void ProcessC()
 #ifdef _reader_first_without_writer_hungry
         milli_seconds(1000);
 #endif
+
+        V(&books);
     }
 }
 
@@ -205,8 +214,6 @@ void ProcessF()
     int cost = 1 * time_slice;
     while (1)
     {
-        // B_P(&mutex);
-        milli_seconds(cost);
         if (!writerNum)
         {
             sprint("[now is reading: ");
@@ -217,6 +224,6 @@ void ProcessF()
         {
             sprint("[now is writing]  ");
         }
-        // B_V(&mutex);
+        milli_seconds(cost);
     }
 }
