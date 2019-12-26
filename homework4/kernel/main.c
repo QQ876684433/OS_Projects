@@ -90,21 +90,21 @@ PUBLIC int kernel_main()
 	disp_pos = 0;
 
 	// 初始化信号量
-	s.value = 1;
-	s.list = NULL;
-	variable = 0;
+	// s.value = 1;
+	// s.list = NULL;
+	// variable = 0;
 
 	// 读者-写者问题相关数据初始化
 	readcount = 0;
 	writeblock.value = 1;
 	mutex.value = 1;
-	books.value = 3;
+	books.value = 2; // 设置最多同时读的进程数
 	s.value = 1;
 	writeblock.list = NULL;
 	mutex.list = NULL;
 	books.list = NULL;
 	s.list = NULL;
-	time_slice = 1000;
+	time_slice = 2000;	// 表示1s
 	writerNum = 0; // 当前写者数为0
 	readerNum = 0; // 当前读者数为0
 
@@ -114,4 +114,3 @@ PUBLIC int kernel_main()
 	{
 	}
 }
-

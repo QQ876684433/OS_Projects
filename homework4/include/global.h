@@ -29,8 +29,8 @@ extern	char		task_stack[];
 extern  TASK            task_table[];
 extern	irq_handler	irq_table[];
 
-EXTERN SEMAPHORE s;
-EXTERN int variable; 
+// EXTERN SEMAPHORE s;
+// EXTERN int variable; 
 
 /**
  * 读者-写者问题信号量定义 

@@ -7,13 +7,12 @@
 #include "global.h"
 
 // 定义作业任务宏
-#define _reader_first_with_writer_hungry    // 读者优先，不解决写者饥饿问题
-#define _reader_first_without_writer_hungry // 读者优先，通过每次读者读完即 \
-											// milli_seconds(一个时间片)来解决写者饥饿
+#define _reader_first_with_writer_hungry        // 读者优先，不解决写者饥饿问题
+#define _reader_first_without_writer_hungry     // 读者优先，通过每次读者读完即milli_seconds(一个时间片)来解决写者饥饿
 #define _writer_first                       // 写者优先
 
 /*===================================================================================*
-									题目要求
+					题目要求
 	– 共有 6 个一直存在的进程（循环读写操作）， A、 B、 C 为读者进程， D、 E 为写者进
 	程， F 为普通进程，其中
 	∗ A 阅读消耗 2 个时间片
@@ -33,9 +32,9 @@
  *===================================================================================*/
 
 /*===================================================================================*
-									进程列表
-					共有 6 个一直存在的进程（循环读写操作）， 
-					A、 B、 C 为读者进程， D、 E 为写者进程， F 为普通进程
+                                        进程列表
+        共有 6 个一直存在的进程（循环读写操作）， 
+        A、 B、 C 为读者进程， D、 E 为写者进程， F 为普通进程
  *===================================================================================*/
 
 void ProcessA()
@@ -79,7 +78,7 @@ void ProcessA()
         B_V(&mutex);
 
 #ifdef _reader_first_without_writer_hungry
-        milli_seconds(1000);
+        milli_seconds(time_slice);
 #endif
         // 延时后再唤醒等待队列的读进程（即V操作）
         V(&books);
@@ -127,7 +126,7 @@ void ProcessB()
         B_V(&mutex);
 
 #ifdef _reader_first_without_writer_hungry
-        milli_seconds(1000);
+        milli_seconds(time_slice);
 #endif
 
         V(&books);
@@ -175,7 +174,7 @@ void ProcessC()
         B_V(&mutex);
 
 #ifdef _reader_first_without_writer_hungry
-        milli_seconds(1000);
+        milli_seconds(time_slice);
 #endif
 
         V(&books);
